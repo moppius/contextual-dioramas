@@ -1,0 +1,71 @@
+{
+  "name": "contextual-dioramas",
+  "version": "0.0.0",
+  "description": "Contextual Dioramas",
+  "repository": "https://github.com/moppius/contextual-dioramas",
+  "author": {
+    "name": "Paul Greveson",
+    "email": "p.greveson@gmail.com",
+    "url": "http://greveson.co.uk"
+  },
+  "license": "MIT",
+  "scripts": {
+    "start": "set NODE_ENV=development&&webpack-dev-server",
+    "prebuild": "yarn clean && yarn copy-public",
+    "build": "set NODE_ENV=production&&webpack",
+    "clean": "if exist build\\ rd build /q /s",
+    "copy-public": "xcopy public build\\ /E",
+    "predeploy": "yarn build",
+    "deploy": "gh-pages -d build"
+  },
+  "browserslist": {
+    "production": [
+      ">0.25%",
+      "not ie 11",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 Chrome version",
+      "last 1 Firefox version",
+      "last 1 Safari version"
+    ]
+  },
+  "dependencies": {
+    "cannon": "^0.6.2",
+    "canvas-sketch-util": "^1.10.0",
+    "controls-gui": "^2.0.0",
+    "controls-state": "^2.0.0",
+    "datauritoblob": "^1.0.0",
+    "detect-gpu": "^1.3.0",
+    "glsl-vignette": "^1.1.0",
+    "highest-power-two": "^1.0.2",
+    "image-promise": "^7.0.1",
+    "lodash": "^4.17.15",
+    "orbit-controls": "^1.2.4",
+    "p-map": "^4.0.0",
+    "pretty-ms": "^7.0.0",
+    "seedrandom": "^3.0.5",
+    "stats.js": "^0.17.0",
+    "three": "0.117.1",
+    "touches": "^1.2.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.10.2",
+    "babel-loader": "^8.1.0",
+    "babel-preset-accurapp": "^5.1.0",
+    "chalk": "^4.0.0",
+    "detect-port": "^1.3.0",
+    "eslint-config-accurapp": "^5.0.3",
+    "event-hooks-webpack-plugin": "^2.1.6",
+    "gh-pages": "^3.0.0",
+    "glslify-loader": "^2.0.0",
+    "html-webpack-plugin": "4.3.0",
+    "indent-string": "^4.0.0",
+    "raw-loader": "^4.0.1",
+    "react-dev-utils": "^10.2.1",
+    "webpack": "^4.44.1",
+    "webpack-cli": "^3.3.12",
+    "webpack-dev-server": "3.11.0",
+    "webpack-merge": "^4.2.2"
+  }
+}
