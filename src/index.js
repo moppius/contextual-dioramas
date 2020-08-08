@@ -26,11 +26,9 @@ const defaultDioramaOptions = {
   bounds: new THREE.Vector3(48, 16, 32),
   buildings: 0.1,
   vegetation: 0.4,
-  water: true,
-  waterDepth: 1,
-  waterWidth: 2,
-  waterFalloff: 6,
+  water: { enabled: true, depth: 1, width: 2, falloff: 6 },
 }
+
 new DioramaControls(webgl, defaultDioramaOptions)
 
 // Hide canvas until assets are loaded
@@ -38,7 +36,7 @@ webgl.canvas.style.visibility = 'hidden'
 
 // Load any queued assets
 assets.load({ renderer: webgl.renderer }).then(() => {
-  webgl.scene.diorama = new Diorama(webgl, defaultDioramaOptions)
+  webgl.scene.diorama = new Diorama(webgl, { diorama: defaultDioramaOptions })
   webgl.scene.add(webgl.scene.diorama)
 
   webgl.canvas.style.visibility = ''

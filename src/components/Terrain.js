@@ -27,7 +27,7 @@ export default class Terrain extends THREE.Group {
       vertices[i * 3 + 1] = this.heightData[i]
     }
 
-    if (this.options.water === true) {
+    if (this.options.water.enabled === true) {
       this.waterCurve = this.getWaterCurve(geometry)
       this.modifyGeometryForWater(geometry)
     }
@@ -119,15 +119,19 @@ export default class Terrain extends THREE.Group {
         }
       }
       const distance = vertex2D.distanceTo(new THREE.Vector2(target.x, target.z))
-      if (distance < this.options.waterWidth / 2 + this.options.waterFalloff) {
+      if (distance < this.options.water.width / 2 + this.options.water.falloff) {
         vertices[i * 3 + 1] = this.getWaterVertexHeight(distance, target.y, vertices[i * 3 + 1])
       }
     }
   }
 
   getWaterVertexHeight(distance, target, current) {
-    const t = Math.clamp((distance - this.options.waterWidth / 2) / this.options.waterFalloff, 0, 1)
-    const calculated = lerp(target - this.options.waterDepth, current, t)
+    const t = Math.clamp(
+      (distance - this.options.water.width / 2) / this.options.water.falloff,
+      0,
+      1
+    )
+    const calculated = lerp(target - this.options.water.depth, current, t)
     const lowest = -this.options.bounds.y / 2 + 1
     return Math.max(lowest, calculated)
   }

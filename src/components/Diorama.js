@@ -14,30 +14,23 @@ export default class Diorama extends THREE.Group {
 
     this.type = 'Diorama'
 
-    if (this.options.seed === undefined || this.options.seed === null) {
-      this.options.seed = 0
+    if (this.options.diorama.seed === undefined || this.options.diorama.seed === null) {
+      this.options.diorama.seed = 0
     }
+
     console.log(
-      `Creating new diorama (seed=${this.options.seed}, bounds=[${this.options.bounds.x}, ${this.options.bounds.y}, ${this.options.bounds.z}])`
+      `Creating new diorama (seed=${options.diorama.seed}, bounds=[${options.diorama.bounds.x}, ${options.diorama.bounds.y}, ${options.diorama.bounds.z}])`
     )
 
     let seedrandom = require('seedrandom')
-    this.rng = seedrandom(this.options.seed)
+    this.rng = seedrandom(this.options.diorama.seed)
 
-    // TODO: Move to diorama options
-    const terrainOptions = {
-      seed: this.options.seed,
-      bounds: this.options.bounds,
-      water: this.options.water,
-      waterFalloff: this.options.waterFalloff,
-      waterWidth: this.options.waterWidth,
-      waterDepth: this.options.waterDepth,
-    }
-    this.terrain = new Terrain(this.webgl, terrainOptions)
+    this.terrain = new Terrain(this.webgl, this.options.diorama)
     this.add(this.terrain)
 
-    if (this.options.water === true) {
-      this.water = new Water(this.webgl, terrainOptions, this.terrain.waterCurve)
+    this.water = null
+    if (this.options.diorama.water.enabled === true) {
+      this.water = new Water(this.webgl, this.options.diorama, this.terrain.waterCurve)
       this.add(this.water)
 
       if (window.DEBUG) {
@@ -50,13 +43,13 @@ export default class Diorama extends THREE.Group {
     }
 
     const buildingOptions = {
-      bounds: this.options.bounds,
-      density: 0.01 * this.options.buildings,
+      bounds: this.options.diorama.bounds,
+      density: 0.01 * this.options.diorama.buildings,
     }
     this.distributeObjects(Building, buildingOptions, this.terrain)
 
     const treeOptions = {
-      density: 0.1 * this.options.vegetation,
+      density: 0.1 * this.options.diorama.vegetation,
       height: 3,
     }
     this.distributeObjects(Tree, treeOptions, this.terrain)
@@ -67,9 +60,9 @@ export default class Diorama extends THREE.Group {
 
     if (window.DEBUG) {
       let geometry = new THREE.BoxGeometry(
-        this.options.bounds.x,
-        this.options.bounds.y,
-        this.options.bounds.z
+        this.options.diorama.bounds.x,
+        this.options.diorama.bounds.y,
+        this.options.diorama.bounds.z
       )
       let wireframe = new THREE.WireframeGeometry(geometry)
 
@@ -93,7 +86,12 @@ export default class Diorama extends THREE.Group {
     this.skylight.position.set(0, 50, 0)
     this.add(this.skylight)
 
-    const size = Math.max(this.options.bounds.x, this.options.bounds.y, this.options.bounds.z) / 2
+    const size =
+      Math.max(
+        this.options.diorama.bounds.x,
+        this.options.diorama.bounds.y,
+        this.options.diorama.bounds.z
+      ) / 2
 
     this.sun = new THREE.DirectionalLight(0xffffff, 1)
     this.sun.color.setHSL(0.1, 1, 0.95)
@@ -121,22 +119,22 @@ export default class Diorama extends THREE.Group {
     const basePadding = 4
     const baseHeight = 2
     const geometry = new THREE.BoxGeometry(
-      this.options.bounds.x + basePadding,
+      this.options.diorama.bounds.x + basePadding,
       baseHeight,
-      this.options.bounds.z + basePadding
+      this.options.diorama.bounds.z + basePadding
     )
     const material = new THREE.MeshStandardMaterial({ color: new THREE.Color(0.4, 0.4, 0.4) })
     const base = new THREE.Mesh(geometry, material)
-    base.translateY(-this.options.bounds.y / 2 - baseHeight / 2)
+    base.translateY(-this.options.diorama.bounds.y / 2 - baseHeight / 2)
     base.castShadow = true
     base.receiveShadow = true
     this.add(base)
 
     // Floor plane
-    const floorSize = Math.max(this.options.bounds.x, this.options.bounds.z) * 2
+    const floorSize = Math.max(this.options.diorama.bounds.x, this.options.diorama.bounds.z) * 2
     const floorGeometry = new THREE.PlaneGeometry(floorSize, floorSize)
     floorGeometry.rotateX(-Math.PI / 2)
-    floorGeometry.translate(0, -this.options.bounds.y / 2 - baseHeight, 0)
+    floorGeometry.translate(0, -this.options.diorama.bounds.y / 2 - baseHeight, 0)
     const floorMaterial = new THREE.ShadowMaterial({ opacity: 0.25 })
     const floor = new THREE.Mesh(floorGeometry, floorMaterial)
     floor.receiveShadow = true
@@ -150,14 +148,14 @@ export default class Diorama extends THREE.Group {
     const numObjects = area * options.density
 
     const seedrandom = require('seedrandom'),
-      rng = seedrandom(this.options.seed),
+      rng = seedrandom(this.options.diorama.seed),
       raycaster = new THREE.Raycaster()
 
     for (let i = 0; i < numObjects; i++) {
-      options.seed = this.options.seed + i
+      options.seed = this.options.diorama.seed + i
       let position = new THREE.Vector3(rng(), 0, rng())
       position.multiply(new THREE.Vector3().subVectors(bounds.max, bounds.min))
-      position.add(new THREE.Vector3(-0.5, 1, -0.5).multiply(this.options.bounds))
+      position.add(new THREE.Vector3(-0.5, 1, -0.5).multiply(this.options.diorama.bounds))
       raycaster.set(position, new THREE.Vector3(0, -1, 0))
 
       let intersects = raycaster.intersectObjects(this.children, true)
@@ -179,7 +177,7 @@ export default class Diorama extends THREE.Group {
         const arrow = new THREE.ArrowHelper(
           raycaster.ray.direction,
           raycaster.ray.origin,
-          this.options.bounds.y * 1.5,
+          this.options.diorama.bounds.y * 1.5,
           rayColor,
           1,
           0.5
