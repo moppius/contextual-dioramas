@@ -16,6 +16,7 @@ Once you have installed the dependencies by running `yarn`, these are the availa
 
 - `yarn start` starts a server locally and launches the browser - any changes will be hot-reloaded, for rapid iteration
 - `yarn build` builds the project for production, ready to be deployed from the `build/` folder
+- `yarn deploy` builds and pushes the contents of build folder to a `gh-pages` branch on this repository
 
 All the build tools logic is in the `package.json` and `webpack.config.js`.
 
