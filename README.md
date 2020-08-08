@@ -1,6 +1,6 @@
 # Contextual Dioramas
 
-A [Three.js](https://threejs.org/) project that generates 3D dioramas procedurally using contextual information.
+A [Three.js](https://threejs.org/) project that generates 3D dioramas procedurally using contextual information. You can visit the [latest interactive release on the Github Pages site here](https://moppius.github.io/contextual-dioramas/).
 
 It is built on [@marcofugaro](https://github.com/marcofugaro)'s [threejs-modern-app](https://github.com/marcofugaro/threejs-modern-app) framework.
 
