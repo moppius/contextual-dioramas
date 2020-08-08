@@ -20,20 +20,6 @@ const DEFAULT_PORT = '8080'
 const PORT = execSync(`detect-port ${DEFAULT_PORT}`).toString().replace(/\D/g, '')
 const urls = prepareUrls(PROTOCOL, HOST, PORT)
 
-// make the console >tree command look pretty
-function beautifyTree(tree) {
-  const trimEnd = (s) => s.slice(0, s.indexOf('\n\n'))
-  const addByteUnit = (s) => s.replace(/\[ *([0-9]+)\]/g, '[$1B]')
-  const replaceBrackets = (s) => s.replace(/\[(.+)\]/g, chalk.yellow('$1'))
-  const boldFirstLine = (s) => s.replace(/^(.*\n)/g, chalk.bold('$1'))
-  const colorIt = (s) => chalk.cyan(s)
-  const indent = (s) => indentString(s, 2)
-
-  const beautify = _.flow([trimEnd, addByteUnit, replaceBrackets, boldFirstLine, colorIt, indent])
-
-  return beautify(tree)
-}
-
 module.exports = merge.smart(
   {
     module: {
@@ -183,26 +169,6 @@ module.exports = merge.smart(
 
           console.log(chalk.green(`✅  Compiled successfully!`))
           console.log(`The folder ${chalk.bold(`build/`)} is ready to be deployed`)
-          console.log()
-
-          try {
-            const tree = execSync('tree --du -h --dirsfirst build/').toString()
-            console.log(beautifyTree(tree))
-          } catch (e) {
-            console.log(
-              chalk.yellow(
-                `⚠️  Homerew and the tree package are required for the file tree output,`
-              ),
-              `please install them with the following command:`
-            )
-            console.log()
-            console.log(
-              chalk.cyan(
-                `  /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" && brew install tree`
-              )
-            )
-          }
-
           console.log()
         },
       }),
