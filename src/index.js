@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import WebGLApp from './lib/WebGLApp'
 import assets from './lib/AssetManager'
-import Diorama from './components/Diorama'
+import { Diorama, getDefaultDioramaOptions } from './components/Diorama'
 import DioramaControls from './ui/DioramaControls'
 
 window.DEBUG = window.location.search.includes('debug')
@@ -21,13 +21,7 @@ if (window.DEBUG) {
   window.webgl = webgl
 }
 
-const defaultDioramaOptions = {
-  seed: 5000,
-  bounds: new THREE.Vector3(48, 16, 32),
-  buildings: 0.1,
-  vegetation: 0.4,
-  water: { enabled: true, depth: 1, width: 2, falloff: 6 },
-}
+const defaultDioramaOptions = getDefaultDioramaOptions()
 
 new DioramaControls(webgl, defaultDioramaOptions)
 

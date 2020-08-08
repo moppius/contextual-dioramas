@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import Diorama from '../components/Diorama'
+import { Diorama } from '../components/Diorama'
 import { isEmpty } from 'lodash'
 
 /** Default ranges for option sliders */
@@ -154,7 +154,10 @@ export default class DioramaControls {
       this.webgl.scene.diorama = undefined
     }
 
-    this.webgl.scene.diorama = new Diorama(this.webgl, { diorama: this.controls.getValue() })
+    const dioramaOptions = this.controls.getValue()
+    sessionStorage.setItem('dioramaOptions', JSON.stringify(dioramaOptions))
+
+    this.webgl.scene.diorama = new Diorama(this.webgl, { diorama: dioramaOptions })
     this.webgl.scene.add(this.webgl.scene.diorama)
   }
 }

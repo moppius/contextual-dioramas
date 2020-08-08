@@ -4,7 +4,7 @@ import Terrain from './Terrain'
 import Tree from './Tree'
 import Water from './Water'
 
-export default class Diorama extends THREE.Group {
+export class Diorama extends THREE.Group {
   constructor(webgl, options) {
     const start = Date.now()
     super(options)
@@ -186,4 +186,29 @@ export default class Diorama extends THREE.Group {
       }
     }
   }
+}
+
+export function getDefaultDioramaOptions() {
+  const defaultDioramaOptions = {
+    seed: 5000,
+    bounds: new THREE.Vector3(48, 16, 32),
+    biome: 'temperate',
+    buildings: 0.1,
+    vegetation: 0.4,
+    water: { enabled: true, depth: 1, width: 2, falloff: 6 },
+  }
+
+  // Load previous session settings if available
+  const sessionOptions = sessionStorage.getItem('dioramaOptions')
+  if (sessionOptions !== null) {
+    let parsedOptions = {}
+    try {
+      parsedOptions = JSON.parse(sessionOptions)
+    } catch (err) {
+      console.log('Error when parsing session options!')
+    }
+    Object.assign(defaultDioramaOptions, parsedOptions)
+  }
+
+  return defaultDioramaOptions
 }
