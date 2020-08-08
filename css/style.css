@@ -12,9 +12,18 @@ canvas {
   left: 0;
 }
 
+h1,
+h2,
+h3,
+h4,
+h5 {
+  margin-top: 1rem;
+}
+
 #controls {
   position: absolute;
-  top: 0;
+  top: 1rem;
+  left: 1rem;
 }
 
 #controls label {
