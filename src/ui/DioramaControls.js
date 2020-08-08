@@ -2,6 +2,20 @@ import * as THREE from 'three'
 import Diorama from '../components/Diorama'
 import { isEmpty } from 'lodash'
 
+/** Default ranges for option sliders */
+const ranges = {
+  options: {
+    seed: { max: 10000 },
+    buildings: { max: 1, step: 0.01 },
+    vegetation: { max: 1, step: 0.01 },
+  },
+  water: {
+    depth: { max: 10 },
+    width: { max: 20 },
+    falloff: { max: 20 },
+  },
+}
+
 class InputControl {
   constructor(owner, options) {
     this.owner = owner
@@ -59,19 +73,6 @@ class SliderControl extends InputControl {
 }
 
 class ControlGroup {
-  #ranges = {
-    options: {
-      seed: { max: 10000 },
-      buildings: { max: 1, step: 0.01 },
-      vegetation: { max: 1, step: 0.01 },
-    },
-    water: {
-      depth: { max: 10 },
-      width: { max: 20 },
-      falloff: { max: 20 },
-    },
-  }
-
   constructor(owner, options) {
     this.owner = owner
     this.options = options
@@ -91,8 +92,8 @@ class ControlGroup {
           break
         case 'number':
           Object.assign(childOptions, { min: 0, max: 100, step: 1 })
-          if (options.name in this.#ranges && key in this.#ranges[options.name]) {
-            Object.assign(childOptions, this.#ranges[options.name][key])
+          if (options.name in ranges && key in ranges[options.name]) {
+            Object.assign(childOptions, ranges[options.name][key])
           }
           this.controls[key] = new SliderControl(this, childOptions)
           break
