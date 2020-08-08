@@ -195,7 +195,13 @@ export function getDefaultDioramaOptions() {
     biome: 'temperate',
     buildings: 0.1,
     vegetation: 0.4,
-    water: { enabled: true, depth: 1, width: 2, falloff: 6 },
+    water: {
+      enabled: true,
+      level: 0.25,
+      depth: 1,
+      width: 2,
+      falloff: 6,
+    },
   }
 
   // Load previous session settings if available

@@ -10,9 +10,10 @@ const ranges = {
     vegetation: { max: 1, step: 0.01 },
   },
   water: {
-    depth: { max: 10 },
-    width: { max: 20 },
-    falloff: { max: 20 },
+    depth: { max: 10, step: 0.5 },
+    width: { min: 0.5, max: 20, step: 0.5 },
+    falloff: { min: 0.5, max: 20, step: 0.5 },
+    level: { max: 1, step: 0.01 },
   },
 }
 
