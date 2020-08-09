@@ -9,11 +9,20 @@ const ranges = {
     buildings: { max: 1, step: 0.01 },
     vegetation: { max: 1, step: 0.01 },
   },
+  bounds: {
+    x: { min: 5, max: 60 },
+    y: { min: 5, max: 30 },
+    z: { min: 5, max: 60 },
+  },
   water: {
+    level: { max: 1, step: 0.01 },
     depth: { max: 10, step: 0.5 },
     width: { min: 0.5, max: 20, step: 0.5 },
     falloff: { min: 0.5, max: 20, step: 0.5 },
-    level: { max: 1, step: 0.01 },
+  },
+  sand: {
+    width: { max: 10, step: 0.5 },
+    falloff: { max: 10, step: 0.5 },
   },
 }
 
@@ -49,7 +58,7 @@ class CheckBoxControl extends InputControl {
     super(owner, options)
 
     this.input.setAttribute('type', 'checkbox')
-    this.input.setAttribute('checked', options.defaultValue)
+    this.input.checked = options.defaultValue == true
   }
 
   getValue() {

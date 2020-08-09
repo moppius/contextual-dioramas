@@ -3,6 +3,7 @@ import Building from './Building'
 import Terrain from './Terrain'
 import Tree from './Tree'
 import Water from './Water'
+import { Sky } from 'three/examples/jsm/objects/Sky'
 
 export class Diorama extends THREE.Group {
   constructor(webgl, options) {
@@ -21,6 +22,8 @@ export class Diorama extends THREE.Group {
     console.log(
       `Creating new diorama (seed=${options.diorama.seed}, bounds=[${options.diorama.bounds.x}, ${options.diorama.bounds.y}, ${options.diorama.bounds.z}])`
     )
+
+    this.setupLights()
 
     let seedrandom = require('seedrandom')
     this.rng = seedrandom(this.options.diorama.seed)
@@ -53,8 +56,6 @@ export class Diorama extends THREE.Group {
       height: 3,
     }
     this.distributeObjects(Tree, treeOptions, this.terrain)
-
-    this.setupLights()
 
     this.createBase()
 
@@ -112,6 +113,22 @@ export class Diorama extends THREE.Group {
       const helper = new THREE.CameraHelper(this.sun.shadow.camera)
       this.add(helper)
     }
+
+    this.sky = new Sky()
+    this.sky.scale.setScalar(1000)
+    this.add(this.sky)
+
+    const uniforms = this.sky.material.uniforms
+
+    uniforms['turbidity'].value = 10
+    uniforms['rayleigh'].value = 2
+    uniforms['mieCoefficient'].value = 0.005
+    uniforms['mieDirectionalG'].value = 0.8
+
+    this.sky.material.uniforms['sunPosition'].value.copy(this.sun.position)
+
+    const pmremGenerator = new THREE.PMREMGenerator(this.webgl.renderer)
+    this.webgl.scene.environment = pmremGenerator.fromScene(this.sky).texture
   }
 
   createBase() {
@@ -201,6 +218,11 @@ export function getDefaultDioramaOptions() {
       depth: 1,
       width: 2,
       falloff: 6,
+      sand: {
+        enabled: true,
+        width: 1,
+        falloff: 2,
+      },
     },
   }
 

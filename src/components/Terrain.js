@@ -4,6 +4,8 @@ import generateSideMeshes from '../lib/meshUtils'
 import { lerp } from 'canvas-sketch-util/math'
 
 export default class Terrain extends THREE.Group {
+  #bottomPadding = 2
+
   constructor(webgl, options) {
     super(options)
 
@@ -33,13 +35,16 @@ export default class Terrain extends THREE.Group {
     }
     geometry.computeVertexNormals()
 
-    const seedrandom = require('seedrandom')
-    this.rng = seedrandom(this.options.seed)
-    const rx = this.rng() * 0.1,
-      ry = this.rng() * 0.1,
-      rz = this.rng() * 0.1,
-      color = new THREE.Color(0.1 + rx, 0.4 + ry, 0.2 + rz)
-    const material = new THREE.MeshStandardMaterial({ color: color })
+    const texture = new THREE.CanvasTexture(
+      this.generateTexture(geometry, this.options.bounds.x, this.options.bounds.z)
+    )
+    texture.wrapS = THREE.ClampToEdgeWrapping
+    texture.wrapT = THREE.ClampToEdgeWrapping
+
+    const material = new THREE.MeshStandardMaterial({
+      map: texture,
+      envMap: this.webgl.scene.environment,
+    })
 
     this.mesh = new THREE.Mesh(geometry, material)
 
@@ -48,10 +53,11 @@ export default class Terrain extends THREE.Group {
 
     this.add(this.mesh)
 
+    const sideMaterial = new THREE.MeshStandardMaterial({ color: 0x554928 })
     generateSideMeshes(
       this,
       geometry,
-      material,
+      sideMaterial,
       this.options.bounds.x - 1,
       this.options.bounds.z - 1,
       -this.options.bounds.y / 2
@@ -90,14 +96,78 @@ export default class Terrain extends THREE.Group {
       }
     }
 
-    const bottomPadding = 2,
-      heightScale = (this.options.bounds.y - bottomPadding - 2) / this.options.bounds.y
-    const multiplier = this.options.bounds.y / max
+    const heightScale = (this.options.bounds.y - this.#bottomPadding - 2) / this.options.bounds.y,
+      multiplier = this.options.bounds.y / max
     for (let i = 0; i < size; i++) {
       this.heightData[i] =
-        ((this.heightData[i] - min) * multiplier - this.options.bounds.y * 0.5 + bottomPadding) *
+        ((this.heightData[i] - min) * multiplier -
+          this.options.bounds.y * 0.5 +
+          this.#bottomPadding) *
         heightScale
     }
+  }
+
+  generateTexture(geometry, width, height) {
+    var canvas, context, image, imageData
+
+    canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+
+    context = canvas.getContext('2d')
+    context.fillStyle = '#000'
+    context.fillRect(0, 0, width, height)
+
+    image = context.getImageData(0, 0, canvas.width, canvas.height)
+    imageData = image.data
+
+    const seedrandom = require('seedrandom'),
+      rng = seedrandom(this.options.seed)
+
+    const halfHeight = this.options.bounds.y / 2,
+      waterLevel = lerp(-halfHeight, halfHeight, this.options.water.level),
+      vertices = geometry.getAttribute('position').array,
+      grass = new THREE.Color(0.22 + rng() * 0.1, 0.48 + rng() * 0.1, 0.22 + rng() * 0.1),
+      sand = new THREE.Color(0.63 + rng() * 0.05, 0.52 + rng() * 0.05, 0.33 + rng() * 0.05),
+      underwater = new THREE.Color(0.1, 0.2, 0.2)
+    for (let i = 0, l = vertices.length; i < l; i++) {
+      let col = grass.clone()
+      if (this.options.water.enabled) {
+        const height = vertices[i * 3 + 1]
+        if (height < waterLevel) {
+          col = underwater.clone()
+        }
+        if (this.options.water.sand.enabled === true) {
+          const sandMax = this.options.water.sand.width + this.options.water.sand.falloff
+          if (height <= waterLevel - this.options.water.sand.width) {
+            // UNDERWATER TO SAND
+            const t = Math.clamp(height / (waterLevel - height), 0, 1)
+            col.lerp(sand, t)
+          } else if (sandMax > 0.001) {
+            if (height <= waterLevel + this.options.water.sand.width) {
+              // SOLID SAND
+              col = sand.clone()
+            } else if (this.options.water.sand.falloff > 0.001) {
+              // SAND TO GRASS
+              const t = Math.clamp(
+                (height - waterLevel - this.options.water.sand.width) /
+                  this.options.water.sand.falloff,
+                0,
+                1
+              )
+              col = sand.clone().lerp(grass, t)
+            }
+          }
+        }
+      }
+      imageData[i * 4] = col.r * 255 * (1 - rng() * 0.1)
+      imageData[i * 4 + 1] = col.g * 255 * (1 - rng() * 0.1)
+      imageData[i * 4 + 2] = col.b * 255 * (1 - rng() * 0.1)
+    }
+
+    context.putImageData(image, 0, 0)
+
+    return canvas
   }
 
   modifyGeometryForWater(geometry) {

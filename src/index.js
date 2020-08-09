@@ -1,4 +1,3 @@
-import * as THREE from 'three'
 import WebGLApp from './lib/WebGLApp'
 import assets from './lib/AssetManager'
 import { Diorama, getDefaultDioramaOptions } from './components/Diorama'
