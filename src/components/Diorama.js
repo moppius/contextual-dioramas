@@ -4,6 +4,8 @@ import Terrain from './Terrain'
 import Tree from './Tree'
 import Water from './Water'
 import { Sky } from 'three/examples/jsm/objects/Sky'
+import Quad from './ContextQuadtree'
+import Rock from './Rock'
 
 export class Diorama extends THREE.Group {
   constructor(webgl, options) {
@@ -22,6 +24,14 @@ export class Diorama extends THREE.Group {
     console.log(
       `Creating new diorama (seed=${options.diorama.seed}, bounds=[${options.diorama.bounds.x}, ${options.diorama.bounds.y}, ${options.diorama.bounds.z}])`
     )
+
+    const halfX = this.options.diorama.bounds.x / 2,
+      halfZ = this.options.diorama.bounds.z / 2
+    const quadBounds = new THREE.Box2(
+      new THREE.Vector2(-halfX, -halfZ),
+      new THREE.Vector2(halfX, halfZ)
+    )
+    this.options.diorama.contextQuadtree = new Quad(quadBounds)
 
     this.setupLights()
 
@@ -47,15 +57,21 @@ export class Diorama extends THREE.Group {
 
     const buildingOptions = {
       bounds: this.options.diorama.bounds,
-      density: 0.01 * this.options.diorama.buildings,
+      density: this.options.diorama.buildings,
     }
     this.distributeObjects(Building, buildingOptions, this.terrain)
 
     const treeOptions = {
-      density: 0.1 * this.options.diorama.vegetation,
-      height: 3,
+      density: this.options.diorama.vegetation,
+      height: 4,
     }
     this.distributeObjects(Tree, treeOptions, this.terrain)
+
+    const rockOptions = {
+      density: this.options.diorama.vegetation,
+      size: 1,
+    }
+    this.distributeObjects(Rock, rockOptions, this.terrain)
 
     this.createBase()
 
@@ -162,10 +178,13 @@ export class Diorama extends THREE.Group {
     let bounds = new THREE.Box3().setFromObject(onObject)
 
     const area = (bounds.max.x - bounds.min.x) * (bounds.max.z - bounds.min.z)
-    const numObjects = area * options.density
+    let numObjects = area * options.density
+    if (hasOwnProperty.call(classToDistribute, 'baseDensity')) {
+      numObjects *= classToDistribute.baseDensity
+    }
 
     const seedrandom = require('seedrandom'),
-      rng = seedrandom(this.options.diorama.seed),
+      rng = seedrandom(classToDistribute.prototype.constructor.name + this.options.diorama.seed),
       raycaster = new THREE.Raycaster()
 
     for (let i = 0; i < numObjects; i++) {
@@ -183,10 +202,32 @@ export class Diorama extends THREE.Group {
           rayColor = 0x00ff00
           position = intersects[0].point
 
+          if (hasOwnProperty.call(classToDistribute, 'requiredLabels')) {
+            const pass = this.options.diorama.contextQuadtree.positionHasLabels(
+              position,
+              classToDistribute.requiredLabels
+            )
+            if (pass === false) {
+              // This location doesn't meet our object's requirements
+              continue
+            }
+          }
+
           const newObject = new classToDistribute(this.webgl, options)
           newObject.position.set(position.x, position.y, position.z)
           newObject.updateMatrixWorld()
           this.add(newObject)
+
+          if (hasOwnProperty.call(classToDistribute, 'labels')) {
+            const pos = new THREE.Vector2(position.x, position.z)
+            if (classToDistribute.labels.length > 0) {
+              this.options.diorama.contextQuadtree.addLabels(classToDistribute.labels, pos)
+            } else {
+              console.warn(`No labels defined for class ${newObject.type}`)
+            }
+          } else {
+            console.warn(`Failed to find labels property on class ${newObject.type}`)
+          }
         }
       }
 

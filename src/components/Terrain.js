@@ -25,7 +25,7 @@ export default class Terrain extends THREE.Group {
     geometry.rotateX(-Math.PI / 2)
 
     let vertices = geometry.getAttribute('position').array
-    for (let i = 0, l = vertices.length; i < l; i++) {
+    for (let i = 0, l = vertices.length / 3; i < l; i++) {
       vertices[i * 3 + 1] = this.heightData[i]
     }
 
@@ -130,12 +130,14 @@ export default class Terrain extends THREE.Group {
       grass = new THREE.Color(0.22 + rng() * 0.1, 0.48 + rng() * 0.1, 0.22 + rng() * 0.1),
       sand = new THREE.Color(0.63 + rng() * 0.05, 0.52 + rng() * 0.05, 0.33 + rng() * 0.05),
       underwater = new THREE.Color(0.1, 0.2, 0.2)
-    for (let i = 0, l = vertices.length; i < l; i++) {
-      let col = grass.clone()
+    for (let i = 0, l = vertices.length / 3; i < l; i++) {
+      let col = grass.clone(),
+        labels = ['grass']
       if (this.options.water.enabled) {
         const height = vertices[i * 3 + 1]
         if (height < waterLevel) {
           col = underwater.clone()
+          labels = ['water']
         }
         if (this.options.water.sand.enabled === true) {
           const sandMax = this.options.water.sand.width + this.options.water.sand.falloff
@@ -147,6 +149,7 @@ export default class Terrain extends THREE.Group {
             if (height <= waterLevel + this.options.water.sand.width) {
               // SOLID SAND
               col = sand.clone()
+              labels = ['sand']
             } else if (this.options.water.sand.falloff > 0.001) {
               // SAND TO GRASS
               const t = Math.clamp(
@@ -156,6 +159,11 @@ export default class Terrain extends THREE.Group {
                 1
               )
               col = sand.clone().lerp(grass, t)
+              if (t <= 0.33) {
+                labels = ['sand']
+              } else if (t <= 0.67) {
+                labels.push('sand')
+              }
             }
           }
         }
@@ -163,6 +171,10 @@ export default class Terrain extends THREE.Group {
       imageData[i * 4] = col.r * 255 * (1 - rng() * 0.1)
       imageData[i * 4 + 1] = col.g * 255 * (1 - rng() * 0.1)
       imageData[i * 4 + 2] = col.b * 255 * (1 - rng() * 0.1)
+
+      // Add terrain context labels
+      const position = new THREE.Vector2(vertices[i * 3], vertices[i * 3 + 2])
+      this.options.contextQuadtree.addLabels(labels, position)
     }
 
     context.putImageData(image, 0, 0)
@@ -175,7 +187,7 @@ export default class Terrain extends THREE.Group {
     let vertices = geometry.getAttribute('position').array
     let test = new THREE.Vector3(0, 0, 0),
       target = new THREE.Vector3(0, 0, 0)
-    for (let i = 0, l = vertices.length; i < l; i++) {
+    for (let i = 0, l = vertices.length / 3; i < l; i++) {
       const vertex = new THREE.Vector3(vertices[i * 3], vertices[i * 3 + 1], vertices[i * 3 + 2])
       const vertex2D = new THREE.Vector2(vertex.x, vertex.z)
       let closest = 100000
@@ -225,7 +237,7 @@ export default class Terrain extends THREE.Group {
       tempVec = new THREE.Vector3()
     const vertices = geometry.getAttribute('position').array,
       minDist = Math.min(this.options.bounds.x, this.options.bounds.z) / 4
-    for (let i = 0; i < vertices.length; i++) {
+    for (let i = 0; i < vertices.length / 3; i++) {
       for (let j = 0; j < points.length; j++) {
         tempVec.x = vertices[i * 3]
         tempVec.y = vertices[i * 3 + 1]

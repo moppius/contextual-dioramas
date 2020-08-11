@@ -1,6 +1,10 @@
 import * as THREE from 'three'
 
 export default class Building extends THREE.Group {
+  static requiredLabels = ['grass']
+  static labels = ['building']
+  static baseDensity = 0.01
+
   constructor(webgl, options) {
     super(options)
 

@@ -1,6 +1,10 @@
 import * as THREE from 'three'
 
 export default class Tree extends THREE.Mesh {
+  static requiredLabels = ['grass']
+  static labels = ['vegetation', 'tree']
+  static baseDensity = 0.1
+
   constructor(webgl, options) {
     super(options)
 
@@ -12,7 +16,7 @@ export default class Tree extends THREE.Mesh {
     const seedrandom = require('seedrandom'),
       rng = seedrandom(this.options.seed)
 
-    this.height = this.options.height + rng() * this.options.height * 0.5
+    this.height = this.options.height + (rng() - 0.5) * this.options.height * 0.5
 
     this.geometry = new THREE.CylinderGeometry(0.01, this.height * 0.25, this.height, 32, 4, false)
     this.geometry.translate(0, this.height * 0.5, 0)

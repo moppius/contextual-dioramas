@@ -54,7 +54,7 @@ export default class Water extends THREE.Group {
     const points = this.waterCurve.getPoints(10)
     const halfHeight = this.options.bounds.y / 2
     let vertices = geometry.getAttribute('position').array
-    for (let i = 0, j = 0, l = vertices.length; i < l; i++, j += 3) {
+    for (let i = 0, j = 0, l = vertices.length / 3; i < l; i++, j += 3) {
       vertices[j] *= 0.999
       vertices[j + 1] = lerp(-halfHeight, halfHeight, this.options.water.level)
       vertices[j + 2] *= 0.999
