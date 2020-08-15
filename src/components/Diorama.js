@@ -7,6 +7,8 @@ import { Sky } from 'three/examples/jsm/objects/Sky'
 import Quad from './ContextQuadtree'
 import Rock from './Rock'
 
+const ALL_ASSET_CLASSES = [Building, Tree, Rock]
+
 export class Diorama extends THREE.Group {
   constructor(webgl, options) {
     const start = Date.now()
@@ -27,11 +29,12 @@ export class Diorama extends THREE.Group {
 
     const halfX = this.options.diorama.bounds.x / 2,
       halfZ = this.options.diorama.bounds.z / 2
+    const maxSize = Math.max(halfX, halfZ)
     const quadBounds = new THREE.Box2(
-      new THREE.Vector2(-halfX, -halfZ),
-      new THREE.Vector2(halfX, halfZ)
+      new THREE.Vector2(-maxSize, -maxSize),
+      new THREE.Vector2(maxSize, maxSize)
     )
-    this.options.diorama.contextQuadtree = new Quad(quadBounds)
+    this.options.diorama.contextQuadtree = new Quad(webgl, quadBounds)
 
     this.setupLights()
 
@@ -55,23 +58,9 @@ export class Diorama extends THREE.Group {
       }
     }
 
-    const buildingOptions = {
-      bounds: this.options.diorama.bounds,
-      density: this.options.diorama.buildings,
+    for (const ASSET_CLASS of ALL_ASSET_CLASSES) {
+      this.distributeObjects(ASSET_CLASS)
     }
-    this.distributeObjects(Building, buildingOptions, this.terrain)
-
-    const treeOptions = {
-      density: this.options.diorama.vegetation,
-      height: 4,
-    }
-    this.distributeObjects(Tree, treeOptions, this.terrain)
-
-    const rockOptions = {
-      density: this.options.diorama.vegetation,
-      size: 1,
-    }
-    this.distributeObjects(Rock, rockOptions, this.terrain)
 
     this.createBase()
 
@@ -156,7 +145,11 @@ export class Diorama extends THREE.Group {
       baseHeight,
       this.options.diorama.bounds.z + basePadding
     )
-    const material = new THREE.MeshStandardMaterial({ color: new THREE.Color(0.4, 0.4, 0.4) })
+    const material = new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color(0.4, 0.4, 0.4),
+      envMap: this.webgl.scene.environment,
+      roughness: 0.4,
+    })
     const base = new THREE.Mesh(geometry, material)
     base.translateY(-this.options.diorama.bounds.y / 2 - baseHeight / 2)
     base.castShadow = true
@@ -174,54 +167,76 @@ export class Diorama extends THREE.Group {
     this.add(floor)
   }
 
-  distributeObjects(classToDistribute, options, onObject) {
-    let bounds = new THREE.Box3().setFromObject(onObject)
-
-    const area = (bounds.max.x - bounds.min.x) * (bounds.max.z - bounds.min.z)
-    let numObjects = area * options.density
-    if (hasOwnProperty.call(classToDistribute, 'baseDensity')) {
-      numObjects *= classToDistribute.baseDensity
+  distributeObjects(classToDistribute, onObject) {
+    if (onObject === undefined) {
+      onObject = this.terrain.mesh
     }
 
+    const bounds = new THREE.Box3().setFromObject(onObject),
+      className = classToDistribute.prototype.constructor.className
+
+    let numObjects = (bounds.max.x - bounds.min.x) * (bounds.max.z - bounds.min.z)
+
+    if (className in this.options.diorama.assetClasses) {
+      numObjects *= this.options.diorama.assetClasses[className]
+    }
+
+    if (hasOwnProperty.call(classToDistribute, 'baseDensity')) {
+      numObjects *= classToDistribute.baseDensity
+    } else {
+      console.warn(`Class '${className}' had no baseDensity property!`)
+    }
+
+    numObjects = Math.floor(numObjects)
+
     const seedrandom = require('seedrandom'),
-      rng = seedrandom(classToDistribute.prototype.constructor.name + this.options.diorama.seed),
+      rng = seedrandom(className + this.options.diorama.seed),
       raycaster = new THREE.Raycaster()
 
+    const options = { bounds: this.options.diorama.bounds }
     for (let i = 0; i < numObjects; i++) {
-      options.seed = this.options.diorama.seed + i
       let position = new THREE.Vector3(rng(), 0, rng())
       position.multiply(new THREE.Vector3().subVectors(bounds.max, bounds.min))
       position.add(new THREE.Vector3(-0.5, 1, -0.5).multiply(this.options.diorama.bounds))
       raycaster.set(position, new THREE.Vector3(0, -1, 0))
 
+      const pass = this.options.diorama.contextQuadtree.positionHasLabels(
+        position,
+        classToDistribute.requiredLabels
+      )
+      if (pass === false) {
+        // This location doesn't meet our object's requirements
+        continue
+      }
+
       let intersects = raycaster.intersectObjects(this.children, true)
       let rayColor = 0xff0000
       if (intersects.length > 0) {
         rayColor = 0x0000ff
-        if (intersects[0].object === this.terrain.mesh) {
+
+        options.isUnderwater = false
+        if (classToDistribute.allowUnderwater === true && this.water !== null) {
+          if (intersects[0].object === this.water.mesh) {
+            // TODO: Maybe need a bounds against water level check for if the object is *entirely* underwater?
+            options.isUnderwater = true
+            intersects[0] = intersects[1] // Skip the water hit
+          }
+        }
+
+        if (intersects[0].object === onObject) {
           rayColor = 0x00ff00
           position = intersects[0].point
 
-          if (hasOwnProperty.call(classToDistribute, 'requiredLabels')) {
-            const pass = this.options.diorama.contextQuadtree.positionHasLabels(
-              position,
-              classToDistribute.requiredLabels
-            )
-            if (pass === false) {
-              // This location doesn't meet our object's requirements
-              continue
-            }
-          }
-
+          options.seed = this.options.diorama.seed + i
+          options.terrainColor = this.options.diorama.contextQuadtree.getAverageColor(position)
           const newObject = new classToDistribute(this.webgl, options)
           newObject.position.set(position.x, position.y, position.z)
           newObject.updateMatrixWorld()
           this.add(newObject)
 
           if (hasOwnProperty.call(classToDistribute, 'labels')) {
-            const pos = new THREE.Vector2(position.x, position.z)
             if (classToDistribute.labels.length > 0) {
-              this.options.diorama.contextQuadtree.addLabels(classToDistribute.labels, pos)
+              this.options.diorama.contextQuadtree.addLabels(classToDistribute.labels, position)
             } else {
               console.warn(`No labels defined for class ${newObject.type}`)
             }
@@ -251,8 +266,7 @@ export function getDefaultDioramaOptions() {
     seed: 5000,
     bounds: new THREE.Vector3(48, 16, 32),
     biome: 'temperate',
-    buildings: 0.1,
-    vegetation: 0.4,
+    assetClasses: getAssetClassDefaults(),
     water: {
       enabled: true,
       level: 0.25,
@@ -265,6 +279,14 @@ export function getDefaultDioramaOptions() {
         falloff: 2,
       },
     },
+  }
+
+  function getAssetClassDefaults() {
+    const result = {}
+    for (const assetClass of ALL_ASSET_CLASSES) {
+      result[assetClass.prototype.constructor.className] = 1
+    }
+    return result
   }
 
   // Load previous session settings if available

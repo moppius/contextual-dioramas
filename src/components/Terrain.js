@@ -41,9 +41,10 @@ export default class Terrain extends THREE.Group {
     texture.wrapS = THREE.ClampToEdgeWrapping
     texture.wrapT = THREE.ClampToEdgeWrapping
 
-    const material = new THREE.MeshStandardMaterial({
+    const material = new THREE.MeshPhysicalMaterial({
       map: texture,
       envMap: this.webgl.scene.environment,
+      roughness: 0.6,
     })
 
     this.mesh = new THREE.Mesh(geometry, material)
@@ -53,7 +54,11 @@ export default class Terrain extends THREE.Group {
 
     this.add(this.mesh)
 
-    const sideMaterial = new THREE.MeshStandardMaterial({ color: 0x554928 })
+    const sideMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0x554928,
+      envMap: this.webgl.scene.environment,
+      roughness: 0.6,
+    })
     generateSideMeshes(
       this,
       geometry,
@@ -131,24 +136,24 @@ export default class Terrain extends THREE.Group {
       sand = new THREE.Color(0.63 + rng() * 0.05, 0.52 + rng() * 0.05, 0.33 + rng() * 0.05),
       underwater = new THREE.Color(0.1, 0.2, 0.2)
     for (let i = 0, l = vertices.length / 3; i < l; i++) {
-      let col = grass.clone(),
+      let color = grass.clone(),
         labels = ['grass']
       if (this.options.water.enabled) {
         const height = vertices[i * 3 + 1]
         if (height < waterLevel) {
-          col = underwater.clone()
-          labels = ['water']
+          color = underwater.clone()
+          labels = ['sand']
         }
         if (this.options.water.sand.enabled === true) {
           const sandMax = this.options.water.sand.width + this.options.water.sand.falloff
           if (height <= waterLevel - this.options.water.sand.width) {
             // UNDERWATER TO SAND
             const t = Math.clamp(height / (waterLevel - height), 0, 1)
-            col.lerp(sand, t)
+            color.lerp(sand, t)
           } else if (sandMax > 0.001) {
             if (height <= waterLevel + this.options.water.sand.width) {
               // SOLID SAND
-              col = sand.clone()
+              color = sand.clone()
               labels = ['sand']
             } else if (this.options.water.sand.falloff > 0.001) {
               // SAND TO GRASS
@@ -158,7 +163,7 @@ export default class Terrain extends THREE.Group {
                 0,
                 1
               )
-              col = sand.clone().lerp(grass, t)
+              color = sand.clone().lerp(grass, t)
               if (t <= 0.33) {
                 labels = ['sand']
               } else if (t <= 0.67) {
@@ -168,13 +173,19 @@ export default class Terrain extends THREE.Group {
           }
         }
       }
-      imageData[i * 4] = col.r * 255 * (1 - rng() * 0.1)
-      imageData[i * 4 + 1] = col.g * 255 * (1 - rng() * 0.1)
-      imageData[i * 4 + 2] = col.b * 255 * (1 - rng() * 0.1)
+
+      if (height < waterLevel) {
+        labels.push = ['water']
+      }
+
+      imageData[i * 4] = color.r * 255 * (1 - rng() * 0.1)
+      imageData[i * 4 + 1] = color.g * 255 * (1 - rng() * 0.1)
+      imageData[i * 4 + 2] = color.b * 255 * (1 - rng() * 0.1)
 
       // Add terrain context labels
       const position = new THREE.Vector2(vertices[i * 3], vertices[i * 3 + 2])
       this.options.contextQuadtree.addLabels(labels, position)
+      this.options.contextQuadtree.setColor(color, position)
     }
 
     context.putImageData(image, 0, 0)

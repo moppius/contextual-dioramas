@@ -1,12 +1,17 @@
 import * as THREE from 'three'
 
-const MIN_QUAD_SIZE = 1
+const MIN_QUAD_SIZE = 2
 
 export default class Quad {
-  constructor(bounds) {
+  constructor(webgl, bounds) {
+    this.webgl = webgl
+
     this.bounds = bounds
+    this.boundsSize = new THREE.Vector2(0, 0)
+    this.bounds.getSize(this.boundsSize)
 
     this.labels = {}
+    this.color = null
 
     this.topLeft = null
     this.topRight = null
@@ -14,9 +19,150 @@ export default class Quad {
     this.bottomRight = null
   }
 
+  isSmallestAllowedSize() {
+    return this.boundsSize.x <= MIN_QUAD_SIZE && this.boundsSize.y <= MIN_QUAD_SIZE
+  }
+
+  setColor(color, position) {
+    const point = this.getPoint(position)
+    if (this.bounds.containsPoint(point) === false) {
+      console.warn(`setColor: Bounds did not contain position [${position.x}, ${position.y}]!`)
+      return
+    }
+
+    if (this.isSmallestAllowedSize() === true) {
+      this.color = color
+      return
+    }
+
+    const halfX = (this.bounds.min.x + this.bounds.max.x) / 2,
+      halfY = (this.bounds.min.y + this.bounds.max.y) / 2
+
+    if (halfX >= point.x) {
+      // Top left
+      if (halfY >= point.y) {
+        if (this.topLeft === null) {
+          this.topLeft = new Quad(
+            this.webgl,
+            new THREE.Box2(
+              this.bounds.min,
+              this.bounds.min.clone().add(this.bounds.max).multiplyScalar(0.5)
+            )
+          )
+        }
+        this.topLeft.setColor(color, point)
+      }
+      // Bottom left
+      else {
+        if (this.bottomLeft === null) {
+          this.bottomLeft = new Quad(
+            this.webgl,
+            new THREE.Box2(
+              new THREE.Vector2(this.bounds.min.x, (this.bounds.min.y + this.bounds.max.y) / 2),
+              new THREE.Vector2((this.bounds.min.x + this.bounds.max.x) / 2, this.bounds.max.y)
+            )
+          )
+        }
+        this.bottomLeft.setColor(color, point)
+      }
+    } else {
+      // Top right
+      if (halfY >= point.y) {
+        if (this.topRight === null) {
+          this.topRight = new Quad(
+            this.webgl,
+            new THREE.Box2(
+              new THREE.Vector2((this.bounds.min.x + this.bounds.max.x) / 2, this.bounds.min.y),
+              new THREE.Vector2(this.bounds.max.x, (this.bounds.min.y + this.bounds.max.y) / 2)
+            )
+          )
+        }
+        this.topRight.setColor(color, point)
+      }
+      // Bottom right
+      else {
+        if (this.bottomRight === null) {
+          this.bottomRight = new Quad(
+            this.webgl,
+            new THREE.Box2(
+              this.bounds.min.clone().add(this.bounds.max).multiplyScalar(0.5),
+              this.bounds.max
+            )
+          )
+        }
+        this.bottomRight.setColor(color, point)
+      }
+    }
+  }
+
+  getColor(position) {
+    const point = this.getPoint(position)
+    if (this.bounds.containsPoint(point) === true) {
+      if (this.isSmallestAllowedSize() === true) {
+        return this.color
+      }
+      const quads = [this.topLeft, this.topRight, this.bottomRight, this.bottomLeft]
+      for (const quad of quads) {
+        if (quad !== null && quad.bounds.containsPoint(point) === true) {
+          return quad.getColor(point)
+        }
+      }
+    } else {
+      console.warn(`getColor: Bounds did not contain position [${point.x}, ${point.y}]!`)
+    }
+
+    if (window.DEBUG) {
+      this.drawDebug(0xff00ff)
+    }
+
+    return null
+  }
+
+  getAverageColor(position) {
+    // TODO: Make this recursive (fake mip-mapping with a "mip level" parameter)?
+    const point = this.getPoint(position)
+    const baseColor = this.getColor(point)
+    if (baseColor === null) {
+      return null
+    }
+
+    let r = 0,
+      g = 0,
+      b = 0,
+      numSamples = 0
+
+    const sample = [-1, 0, 1]
+    for (const x of sample) {
+      for (const y of sample) {
+        let color = baseColor
+        if (x != 0 && y != 0) {
+          const tap = new THREE.Vector2(point.x + MIN_QUAD_SIZE * x, point.y + MIN_QUAD_SIZE * y)
+          if (this.bounds.containsPoint(tap) === true) {
+            color = this.getColor(tap)
+          }
+          if (color === null) {
+            color = baseColor
+          }
+        }
+        r += color.r
+        g += color.g
+        b += color.b
+        numSamples++
+      }
+    }
+
+    return new THREE.Color(
+      (baseColor.r + r) / numSamples,
+      (baseColor.g + g) / numSamples,
+      (baseColor.b + b) / numSamples
+    )
+  }
+
   addLabels(labels, position) {
-    if (this.bounds.containsPoint(position) === false) {
-      console.warn(`Bounds did not contain position [${position.x}, ${position.y}]!`)
+    const point = this.getPoint(position)
+
+    if (this.bounds.containsPoint(point) === false) {
+      console.warn(`addLabels: Bounds did not contain position [${point.x}, ${point.y}]!`)
       return
     }
 
@@ -28,64 +174,66 @@ export default class Quad {
       }
     }
 
-    const boundsSize = new THREE.Vector2(1, 1)
-    this.bounds.getSize(boundsSize)
-    if (boundsSize.x <= MIN_QUAD_SIZE && boundsSize.y <= MIN_QUAD_SIZE) {
+    if (this.isSmallestAllowedSize()) {
       return
     }
 
     const halfX = (this.bounds.min.x + this.bounds.max.x) / 2,
       halfY = (this.bounds.min.y + this.bounds.max.y) / 2
 
-    if (halfX >= position.x) {
+    if (halfX >= point.x) {
       // Top left
-      if (halfY >= position.y) {
+      if (halfY >= point.y) {
         if (this.topLeft === null) {
           this.topLeft = new Quad(
+            this.webgl,
             new THREE.Box2(
               this.bounds.min,
               this.bounds.min.clone().add(this.bounds.max).multiplyScalar(0.5)
             )
           )
         }
-        this.topLeft.addLabels(labels, position)
+        this.topLeft.addLabels(labels, point)
       }
       // Bottom left
       else {
         if (this.bottomLeft === null) {
           this.bottomLeft = new Quad(
+            this.webgl,
             new THREE.Box2(
               new THREE.Vector2(this.bounds.min.x, (this.bounds.min.y + this.bounds.max.y) / 2),
               new THREE.Vector2((this.bounds.min.x + this.bounds.max.x) / 2, this.bounds.max.y)
             )
           )
         }
-        this.bottomLeft.addLabels(labels, position)
+        this.bottomLeft.addLabels(labels, point)
       }
     } else {
       // Top right
-      if (halfY >= position.y) {
+      if (halfY >= point.y) {
         if (this.topRight === null) {
           this.topRight = new Quad(
+            this.webgl,
             new THREE.Box2(
               new THREE.Vector2((this.bounds.min.x + this.bounds.max.x) / 2, this.bounds.min.y),
               new THREE.Vector2(this.bounds.max.x, (this.bounds.min.y + this.bounds.max.y) / 2)
             )
           )
         }
-        this.topRight.addLabels(labels, position)
+        this.topRight.addLabels(labels, point)
       }
       // Bottom right
       else {
         if (this.bottomRight === null) {
           this.bottomRight = new Quad(
+            this.webgl,
             new THREE.Box2(
               this.bounds.min.clone().add(this.bounds.max).multiplyScalar(0.5),
               this.bounds.max
             )
           )
         }
-        this.bottomRight.addLabels(labels, position)
+        this.bottomRight.addLabels(labels, point)
       }
     }
   }
@@ -147,9 +295,7 @@ export default class Quad {
 
   getLabelDensity(label) {
     if (label in this.labels === true) {
-      const boundsSize = new THREE.Vector2(1, 1)
-      this.bounds.getSize(boundsSize)
-      return this.labels[label] / (boundsSize.x * boundsSize.y)
+      return this.labels[label] / (this.boundsSize.x * this.boundsSize.y) // TODO: Divide by ratio of 1x1m
     }
     return 0
   }
@@ -164,10 +310,11 @@ export default class Quad {
   }
 
   positionHasLabels(position, labels) {
-    let point = position
-    if (position.constructor.name === 'Vector3') {
-      point = new THREE.Vector2(position.x, position.z)
+    if (Array.isArray(labels) === false) {
+      return false
     }
+
+    let point = this.getPoint(position)
 
     if (this.bounds.containsPoint(point) === false || this.hasLabels(labels) === false) {
       return false
@@ -181,5 +328,25 @@ export default class Quad {
     }
 
     return true
+  }
+
+  getPoint(position) {
+    if (hasOwnProperty.call(position, 'z')) {
+      return new THREE.Vector2(position.x, position.z)
+    }
+    return position
+  }
+
+  drawDebug(color) {
+    const box = new THREE.Box3(),
+      center = new THREE.Vector3(
+        (this.bounds.min.x + this.bounds.max.x) / 2,
+        10,
+        (this.bounds.min.y + this.bounds.max.y) / 2
+      ),
+      end = new THREE.Vector3(this.boundsSize.x, 1, this.boundsSize.y)
+    box.setFromCenterAndSize(center, end)
+    const helper = new THREE.Box3Helper(box, color)
+    this.webgl.scene.add(helper)
   }
 }

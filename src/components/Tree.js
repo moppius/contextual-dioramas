@@ -1,33 +1,26 @@
 import * as THREE from 'three'
+import ContextualObject from './ContextualObject'
 
-export default class Tree extends THREE.Mesh {
+export default class Tree extends ContextualObject {
+  static className = 'Tree'
   static requiredLabels = ['grass']
   static labels = ['vegetation', 'tree']
-  static baseDensity = 0.1
+  static baseDensity = 0.05
+  static baseHeight = 4
 
   constructor(webgl, options) {
-    super(options)
+    super(webgl, options)
 
-    this.type = 'TreeMesh'
+    this.type = 'Tree'
 
-    this.webgl = webgl
-    this.options = options
+    this.height =
+      this.constructor.baseHeight +
+      (this.rng() - 0.5) * this.constructor.baseHeight * this.constructor.sizeVariation
 
-    const seedrandom = require('seedrandom'),
-      rng = seedrandom(this.options.seed)
+    const geometry = new THREE.CylinderGeometry(0.01, this.height * 0.25, this.height, 32, 4, false)
+    geometry.translate(0, this.height * 0.5, 0)
 
-    this.height = this.options.height + (rng() - 0.5) * this.options.height * 0.5
-
-    this.geometry = new THREE.CylinderGeometry(0.01, this.height * 0.25, this.height, 32, 4, false)
-    this.geometry.translate(0, this.height * 0.5, 0)
-
-    const rx = rng() * 0.1,
-      ry = rng() * 0.1,
-      rz = rng() * 0.1,
-      color = new THREE.Color(0.1 + rx, 0.4 + ry, 0.2 + rz)
-    this.material = new THREE.MeshStandardMaterial({ color: color })
-
-    this.castShadow = true
-    this.receiveShadow = true
+    const color = new THREE.Color(0.1, 0.4, 0.2)
+    this.addMesh(geometry, { color: color })
   }
 }

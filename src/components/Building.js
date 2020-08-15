@@ -1,20 +1,16 @@
 import * as THREE from 'three'
+import ContextualObject from './ContextualObject'
 
-export default class Building extends THREE.Group {
+export default class Building extends ContextualObject {
+  static className = 'Building'
   static requiredLabels = ['grass']
   static labels = ['building']
-  static baseDensity = 0.01
+  static baseDensity = 0.001
 
   constructor(webgl, options) {
-    super(options)
+    super(webgl, options)
 
     this.type = 'Building'
-
-    this.webgl = webgl
-    this.options = options
-
-    const seedrandom = require('seedrandom'),
-      rng = seedrandom(this.options.seed)
 
     const geometry = new THREE.BoxGeometry(
       this.options.bounds.x * 0.25,
@@ -23,17 +19,7 @@ export default class Building extends THREE.Group {
     )
     geometry.translate(0, this.options.bounds.y * 0.25 * 0.5, 0)
 
-    const rx = rng() * 0.1,
-      ry = rng() * 0.1,
-      rz = rng() * 0.1,
-      color = new THREE.Color(0.5 + rx, 0.4 + ry, 0.3 + rz)
-    const material = new THREE.MeshStandardMaterial({ color: color })
-
-    this.box = new THREE.Mesh(geometry, material)
-    this.box.name = 'Building'
-    this.box.castShadow = true
-    this.box.receiveShadow = true
-
-    this.add(this.box)
+    const color = new THREE.Color(0.5, 0.4, 0.3)
+    this.addMesh(geometry, { color: color })
   }
 }

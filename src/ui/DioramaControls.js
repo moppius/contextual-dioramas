@@ -6,8 +6,6 @@ import { isEmpty } from 'lodash'
 const ranges = {
   options: {
     seed: { max: 10000 },
-    buildings: { max: 1, step: 0.01 },
-    vegetation: { max: 1, step: 0.01 },
   },
   bounds: {
     x: { min: 5, max: 60 },
@@ -82,6 +80,48 @@ class SliderControl extends InputControl {
   }
 }
 
+class AssetArrayGroup {
+  constructor(owner, options) {
+    this.owner = owner
+    this.options = options
+
+    this.div = document.createElement('div')
+    this.heading = document.createElement('h' + options.depth)
+    this.heading.innerText = 'Assets'
+    this.div.appendChild(this.heading)
+
+    this.controls = {}
+
+    const childOptions = {
+      parent: this.div,
+      min: 0,
+      max: 5,
+      step: 0.1,
+    }
+    for (const [key, value] of Object.entries(options.optionsObject)) {
+      Object.assign(childOptions, {
+        name: key + 's',
+        defaultValue: value,
+      })
+      this.controls[key] = new SliderControl(this, childOptions)
+    }
+
+    options.parent.appendChild(this.div)
+  }
+
+  propertyChanged() {
+    this.owner.propertyChanged()
+  }
+
+  getValue() {
+    const options = {}
+    for (const [key, value] of Object.entries(this.controls)) {
+      options[key] = value.getValue()
+    }
+    return options
+  }
+}
+
 class ControlGroup {
   constructor(owner, options) {
     this.owner = owner
@@ -110,7 +150,11 @@ class ControlGroup {
         case 'object':
           if (isEmpty(value) === false) {
             Object.assign(childOptions, { optionsObject: value, depth: options.depth + 1 })
-            this.controls[key] = new ControlGroup(this, childOptions)
+            if (key === 'assetClasses') {
+              this.controls[key] = new AssetArrayGroup(this, childOptions)
+            } else {
+              this.controls[key] = new ControlGroup(this, childOptions)
+            }
           }
           break
       }

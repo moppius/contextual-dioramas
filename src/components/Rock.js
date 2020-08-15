@@ -1,32 +1,29 @@
 import * as THREE from 'three'
+import ContextualObject from './ContextualObject'
 
-export default class Rock extends THREE.Mesh {
+export default class Rock extends ContextualObject {
+  static className = 'Rock'
   static requiredLabels = ['sand']
   static labels = ['rock']
   static baseDensity = 0.1
+  static baseSize = 0.8
+  static allowUnderwater = true
 
   constructor(webgl, options) {
-    super(options)
+    super(webgl, options)
 
-    this.type = 'RockMesh'
+    this.type = 'Rock'
 
-    this.webgl = webgl
-    this.options = options
+    this.size =
+      this.constructor.baseSize +
+      (this.rng() - 0.5) * this.constructor.baseSize * this.constructor.sizeVariation
 
-    const seedrandom = require('seedrandom'),
-      rng = seedrandom(this.options.seed)
-
-    this.size = this.options.size + (rng() - 0.5) * this.options.size * 0.5
-
-    this.geometry = new THREE.SphereGeometry(this.size, 4, 4)
-
-    const rx = rng() * 0.05,
-      ry = rng() * 0.05,
-      rz = rng() * 0.05,
-      color = new THREE.Color(0.5 + rx, 0.4 + ry, 0.25 + rz)
-    this.material = new THREE.MeshStandardMaterial({ color: color })
-
-    this.castShadow = true
-    this.receiveShadow = true
+    const geometry = new THREE.SphereGeometry(this.size, 4, 4)
+    const color = new THREE.Color(0.4, 0.36, 0.32)
+    if (this.options.terrainColor !== null) {
+      color.lerp(this.options.terrainColor, 0.5)
+    }
+    const roughness = this.options.isUnderwater === true ? 0.4 : 0.6
+    this.addMesh(geometry, { color: color, roughness: roughness }, 0.05)
   }
 }
