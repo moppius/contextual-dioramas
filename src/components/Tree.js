@@ -23,15 +23,15 @@ export default class Tree extends ContextualObject {
     let geometry = new THREE.CylinderGeometry(0.01, this.height * 0.25, this.height, 32, 4, false)
     geometry.translate(0, this.height * (0.5 + trunkVerticalOffset), 0)
 
-    let color = new THREE.Color(0.25, 0.38, 0.13)
-    this.addMesh(geometry, { color: color })
+    let color = new THREE.Color(0.15, 0.24, 0.12)
+    this.addMesh(geometry, { color: color }, 0.05)
 
     // Trunk
     const trunkWidth = this.height * 0.05
     geometry = new THREE.CylinderGeometry(trunkWidth, trunkWidth, this.height / 4, 32, 1, true)
     geometry.translate(0, (this.height * trunkVerticalOffset) / 2, 0)
 
-    color = new THREE.Color(0.35, 0.28, 0.13)
+    color = new THREE.Color(0.28, 0.21, 0.12)
     this.addMesh(geometry, { color: color })
   }
 }

@@ -21,3 +21,7 @@ Once you have installed the dependencies by running `yarn`, these are the availa
 All the build tools logic is in the `package.json` and `webpack.config.js`.
 
 Read the full [threejs-modern-app documentation](https://github.com/marcofugaro/threejs-modern-app) for a more in-depth guide.
+
+## Credits
+
+- The environment reflection map is a free CC0 HDRI image from [hdrihaven.com](https://hdrihaven.com/)

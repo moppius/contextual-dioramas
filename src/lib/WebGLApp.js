@@ -23,7 +23,7 @@ export default class WebGLApp {
   constructor({
     background = '#000',
     backgroundAlpha = 1,
-    fov = 45,
+    fov = 40,
     near = 0.1,
     far = 500,
     ...options
@@ -102,7 +102,7 @@ export default class WebGLApp {
 
     // set up a simple orbit controller
     if (options.orbitControls) {
-      this.camera.position.set(40, 20, -50)
+      this.camera.position.set(30, 20, 60)
       this.orbitControls = new OrbitControls(this.camera, this.renderer.domElement)
       this.orbitControls.update()
     }

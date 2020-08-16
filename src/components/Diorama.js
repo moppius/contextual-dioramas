@@ -1,12 +1,12 @@
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js'
 import * as THREE from 'three'
 import Building from './Building'
+import ContextualObject from './ContextualObject'
+import Quad from './ContextQuadtree'
+import Rock from './Rock'
 import Terrain from './Terrain'
 import Tree from './Tree'
 import Water from './Water'
-import { Sky } from 'three/examples/jsm/objects/Sky'
-import Quad from './ContextQuadtree'
-import Rock from './Rock'
-import ContextualObject from './ContextualObject'
 
 const ALL_ASSET_CLASSES = [Building, Tree, Rock]
 
@@ -102,11 +102,11 @@ export class Diorama extends THREE.Group {
 
     this.sun = new THREE.DirectionalLight(0xffffff, 1)
     this.sun.color.setHSL(0.1, 1, 0.95)
-    this.sun.position.set(0.7, 1, 0.6)
+    this.sun.position.set(-0.5, 1, 0.375)
     this.sun.position.multiplyScalar(size)
     this.sun.castShadow = true
-    this.sun.shadow.mapSize.width = 2048
-    this.sun.shadow.mapSize.height = 2048
+    this.sun.shadow.mapSize.width = 1024
+    this.sun.shadow.mapSize.height = 1024
     this.sun.shadow.camera.left = -size * 1.5
     this.sun.shadow.camera.right = size * 1.5
     this.sun.shadow.camera.top = size * 1.5
@@ -120,21 +120,26 @@ export class Diorama extends THREE.Group {
       this.add(helper)
     }
 
-    this.sky = new Sky()
-    this.sky.scale.setScalar(1000)
-    this.add(this.sky)
-
-    const uniforms = this.sky.material.uniforms
-
-    uniforms['turbidity'].value = 10
-    uniforms['rayleigh'].value = 2
-    uniforms['mieCoefficient'].value = 0.005
-    uniforms['mieDirectionalG'].value = 0.8
-
-    this.sky.material.uniforms['sunPosition'].value.copy(this.sun.position)
-
     const pmremGenerator = new THREE.PMREMGenerator(this.webgl.renderer)
-    this.webgl.scene.environment = pmremGenerator.fromScene(this.sky).texture
+    pmremGenerator.compileEquirectangularShader()
+
+    const scene = this.webgl.scene
+
+    new RGBELoader()
+      .setDataType(THREE.UnsignedByteType)
+      .setPath('textures/equirectangular/')
+      .load('cloud_layers_1k.hdr', function (texture) {
+        const envMap = pmremGenerator.fromEquirectangular(texture).texture
+
+        scene.environment = envMap
+
+        texture.dispose()
+        pmremGenerator.dispose()
+      })
+
+    this.webgl.renderer.toneMapping = THREE.ACESFilmicToneMapping
+    this.webgl.renderer.toneMappingExposure = 0.25
+    this.webgl.renderer.outputEncoding = THREE.sRGBEncoding
   }
 
   createBase() {
@@ -147,9 +152,9 @@ export class Diorama extends THREE.Group {
       this.options.diorama.bounds.z + basePadding
     )
     const material = new THREE.MeshPhysicalMaterial({
-      color: new THREE.Color(0.4, 0.4, 0.4),
+      color: new THREE.Color(0.2, 0.2, 0.2),
       envMap: this.webgl.scene.environment,
-      roughness: 0.4,
+      roughness: 0.25,
     })
     const base = new THREE.Mesh(geometry, material)
     base.translateY(-this.options.diorama.bounds.y / 2 - baseHeight / 2)
@@ -285,7 +290,7 @@ export class Diorama extends THREE.Group {
 
 export function getDefaultDioramaOptions() {
   const defaultDioramaOptions = {
-    seed: 5000,
+    seed: 2655,
     bounds: new THREE.Vector3(48, 16, 32),
     biome: 'temperate',
     assetClasses: getAssetClassDefaults(),

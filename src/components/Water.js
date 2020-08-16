@@ -18,15 +18,15 @@ export default class Water extends THREE.Group {
 
     const seedrandom = require('seedrandom')
     this.rng = seedrandom(this.options.seed)
-    const rx = this.rng() * 0.1,
-      ry = this.rng() * 0.1,
-      rz = this.rng() * 0.1,
-      color = new THREE.Color(0.1 + rx, 0.15 + ry, 0.2 + rz),
+    const rx = this.rng() * 0.05,
+      ry = this.rng() * 0.05,
+      rz = this.rng() * 0.05,
+      color = new THREE.Color(0.06 + rx, 0.08 + ry, 0.07 + rz),
       material = new THREE.MeshPhysicalMaterial({
         color: color,
         transparent: true,
         opacity: 0.8,
-        roughness: 0.1,
+        roughness: 0.01,
         reflectivity: 1,
         envMap: this.webgl.scene.environment,
       }),

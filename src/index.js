@@ -10,7 +10,7 @@ const canvas = document.querySelector('#app')
 const webgl = new WebGLApp({
   canvas,
   alpha: true,
-  background: '#222',
+  background: '#ABC',
   backgroundAlpha: 1,
   showFps: window.DEBUG,
   orbitControls: true,
