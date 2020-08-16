@@ -6,6 +6,7 @@ export default class Tree extends ContextualObject {
   static distributionOptions = { grass: 1 }
   static labels = ['vegetation', 'tree']
   static baseDensity = 0.05
+  static randomAngle = new THREE.Vector3(4, 0, 4)
   static baseHeight = 4
 
   constructor(webgl, options) {

@@ -6,6 +6,7 @@ export default class Rock extends ContextualObject {
   static distributionOptions = { sand: 1, grass: 0.2 }
   static labels = ['rock']
   static baseDensity = 0.1
+  static randomAngle = new THREE.Vector3(15, 90, 15)
   static baseSize = 0.8
   static allowUnderwater = true
 
