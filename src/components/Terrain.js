@@ -132,9 +132,15 @@ export default class Terrain extends THREE.Group {
     const halfHeight = this.options.bounds.y / 2,
       waterLevel = lerp(-halfHeight, halfHeight, this.options.water.level),
       vertices = geometry.getAttribute('position').array,
-      grass = new THREE.Color(0.22 + rng() * 0.1, 0.48 + rng() * 0.1, 0.22 + rng() * 0.1),
+      normals = geometry.getAttribute('normal').array,
+      grass = new THREE.Color(0.38 + rng() * 0.1, 0.48 + rng() * 0.1, 0.19 + rng() * 0.1),
       sand = new THREE.Color(0.63 + rng() * 0.05, 0.52 + rng() * 0.05, 0.33 + rng() * 0.05),
-      underwater = new THREE.Color(0.1, 0.2, 0.2)
+      cliff = new THREE.Color(0.35 + rng() * 0.05, 0.38 + rng() * 0.05, 0.37 + rng() * 0.05),
+      underwater = new THREE.Color(0.1 + rng() * 0.1, 0.2 + rng() * 0.1, 0.2 + rng() * 0.1),
+      upVector = new THREE.Vector3(0, 1, 0),
+      minCliffSteepness = 0.15,
+      maxCliffSteepness = 0.2
+
     for (let i = 0, l = vertices.length / 3; i < l; i++) {
       let color = grass.clone(),
         labels = ['grass']
@@ -171,6 +177,22 @@ export default class Terrain extends THREE.Group {
               }
             }
           }
+        }
+      }
+
+      const normal = new THREE.Vector3(normals[i * 3], normals[i * 3 + 1], normals[i * 3 + 2]),
+        cliffSteepness = 1 - Math.abs(normal.dot(upVector))
+      // 1 = vertical, 0 = horizontal
+      if (cliffSteepness > minCliffSteepness) {
+        const blend = Math.min(
+          1,
+          (cliffSteepness - minCliffSteepness) / (maxCliffSteepness - minCliffSteepness)
+        )
+        color.lerp(cliff, blend)
+        if (blend >= 0.67) {
+          labels = ['cliff']
+        } else if (blend > 0.33) {
+          labels.push('cliff')
         }
       }
 

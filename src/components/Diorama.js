@@ -6,6 +6,7 @@ import Water from './Water'
 import { Sky } from 'three/examples/jsm/objects/Sky'
 import Quad from './ContextQuadtree'
 import Rock from './Rock'
+import ContextualObject from './ContextualObject'
 
 const ALL_ASSET_CLASSES = [Building, Tree, Rock]
 
@@ -86,9 +87,9 @@ export class Diorama extends THREE.Group {
   update(dt, time) {}
 
   setupLights() {
-    this.skylight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6)
-    this.skylight.color.setHSL(0.6, 1, 0.6)
-    this.skylight.groundColor.setHSL(0.095, 1, 0.75)
+    this.skylight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.8)
+    this.skylight.color.setHSL(0.56, 0.7, 0.6)
+    this.skylight.groundColor.setHSL(0.095, 0.5, 0.5)
     this.skylight.position.set(0, 50, 0)
     this.add(this.skylight)
 
@@ -167,12 +168,17 @@ export class Diorama extends THREE.Group {
     this.add(floor)
   }
 
-  distributeObjects(classToDistribute, onObject) {
-    if (onObject === undefined) {
-      onObject = this.terrain.mesh
+  /**
+   * Distributes objects based on their contextual requirements.
+   * @param {ContextualObject} classToDistribute The class of Contextual Object to distribute
+   * @param {THREE.Mesh} onMesh Mesh to distribute objects on - if not specified, the terrain mesh is used
+   */
+  distributeObjects(classToDistribute, onMesh = undefined) {
+    if (onMesh === undefined) {
+      onMesh = this.terrain.mesh
     }
 
-    const bounds = new THREE.Box3().setFromObject(onObject),
+    const bounds = new THREE.Box3().setFromObject(onMesh),
       className = classToDistribute.prototype.constructor.className
 
     let numObjects = (bounds.max.x - bounds.min.x) * (bounds.max.z - bounds.min.z)
@@ -200,11 +206,8 @@ export class Diorama extends THREE.Group {
       position.add(new THREE.Vector3(-0.5, 1, -0.5).multiply(this.options.diorama.bounds))
       raycaster.set(position, new THREE.Vector3(0, -1, 0))
 
-      const pass = this.options.diorama.contextQuadtree.positionHasLabels(
-        position,
-        classToDistribute.requiredLabels
-      )
-      if (pass === false) {
+      const labels = this.options.diorama.contextQuadtree.getLabels(position)
+      if (this.meetsDistributionRequirements(classToDistribute, rng, labels) === false) {
         // This location doesn't meet our object's requirements
         continue
       }
@@ -223,11 +226,12 @@ export class Diorama extends THREE.Group {
           }
         }
 
-        if (intersects[0].object === onObject) {
+        if (intersects[0].object === onMesh) {
           rayColor = 0x00ff00
           position = intersects[0].point
 
           options.seed = this.options.diorama.seed + i
+          options.labels = this.options.diorama.contextQuadtree.getLabels(position)
           options.terrainColor = this.options.diorama.contextQuadtree.getAverageColor(position)
           const newObject = new classToDistribute(this.webgl, options)
           newObject.position.set(position.x, position.y, position.z)
@@ -258,6 +262,24 @@ export class Diorama extends THREE.Group {
         this.add(arrow)
       }
     }
+  }
+
+  /**
+   * Returns true if a label array meets requirements set by the ContextualObject class, otherwise false
+   * @param {ContextualObject} objectClass The class of Contextual Object to check
+   * @param {seedrandom.prng} rng Seeded random number generator object
+   * @param {string[]} labels Array of labels representing the context to check against
+   * @returns Value representing if the requirements were met
+   */
+  meetsDistributionRequirements(object, rng, labels) {
+    for (const [key, value] of Object.entries(object.distributionOptions)) {
+      if (Object.keys(labels).includes(key) === true) {
+        if (rng() <= value) {
+          return true
+        }
+      }
+    }
+    return false
   }
 }
 

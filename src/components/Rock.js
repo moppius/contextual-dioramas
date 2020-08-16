@@ -3,7 +3,7 @@ import ContextualObject from './ContextualObject'
 
 export default class Rock extends ContextualObject {
   static className = 'Rock'
-  static requiredLabels = ['sand']
+  static distributionOptions = { sand: 1, grass: 0.2 }
   static labels = ['rock']
   static baseDensity = 0.1
   static baseSize = 0.8

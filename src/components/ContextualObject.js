@@ -2,7 +2,7 @@ import * as THREE from 'three'
 
 export default class ContextualObject extends THREE.Group {
   static className = null
-  static requiredLabels = []
+  static distributionOptions = {}
   static labels = []
   static baseDensity = 0
   static sizeVariation = 0.5

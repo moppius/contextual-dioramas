@@ -3,7 +3,7 @@ import ContextualObject from './ContextualObject'
 
 export default class Building extends ContextualObject {
   static className = 'Building'
-  static requiredLabels = ['grass']
+  static distributionOptions = { grass: 1 }
   static labels = ['building']
   static baseDensity = 0.001
 

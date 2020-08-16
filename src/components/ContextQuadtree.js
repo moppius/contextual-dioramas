@@ -300,10 +300,13 @@ export default class Quad {
     return 0
   }
 
-  hasLabels(labels) {
+  hasLabels(labels, requireAll = false) {
     for (const label of labels) {
-      if (label in this.labels === false) {
+      const hasLabel = label in this.labels === true
+      if (requireAll === true && hasLabel === false) {
         return false
+      } else if (requireAll === false && hasLabel === true) {
+        return true
       }
     }
     return true
@@ -328,6 +331,27 @@ export default class Quad {
     }
 
     return true
+  }
+
+  getLabels(position) {
+    const point = this.getPoint(position)
+
+    if (this.bounds.containsPoint(point) === false) {
+      return []
+    }
+
+    if (this.isSmallestAllowedSize() === true) {
+      return this.labels
+    }
+
+    const quads = [this.topLeft, this.topRight, this.bottomRight, this.bottomLeft]
+    for (const quad of quads) {
+      if (quad !== null && quad.bounds.containsPoint(point)) {
+        return quad.getLabels(point)
+      }
+    }
+
+    return this.labels
   }
 
   getPoint(position) {
