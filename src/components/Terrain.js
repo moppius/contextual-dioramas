@@ -212,7 +212,29 @@ export default class Terrain extends THREE.Group {
 
     context.putImageData(image, 0, 0)
 
-    return canvas
+    const canvasScaled = document.createElement('canvas')
+    canvasScaled.width = width * 4
+    canvasScaled.height = height * 4
+
+    context = canvasScaled.getContext('2d')
+    context.scale(4, 4)
+    context.drawImage(canvas, 0, 0)
+
+    image = context.getImageData(0, 0, canvasScaled.width, canvasScaled.height)
+    imageData = image.data
+
+    // Add some noise
+    for (var i = 0, l = imageData.length; i < l; i += 4) {
+      var v = ~~((rng() - 0.5) * 8)
+
+      imageData[i] += v
+      imageData[i + 1] += v
+      imageData[i + 2] += v
+    }
+
+    context.putImageData(image, 0, 0)
+
+    return canvasScaled
   }
 
   modifyGeometryForWater(geometry) {
