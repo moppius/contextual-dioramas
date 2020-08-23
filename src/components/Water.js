@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import generateSideMeshes from '../lib/meshUtils'
 import { lerp } from 'canvas-sketch-util/math'
+import { BIOMES } from './Biomes'
 
 export default class Water extends THREE.Group {
   constructor(webgl, options, waterCurve) {
@@ -18,17 +19,16 @@ export default class Water extends THREE.Group {
 
     const seedrandom = require('seedrandom')
     this.rng = seedrandom(this.options.seed)
-    const rx = this.rng() * 0.05,
-      ry = this.rng() * 0.05,
-      rz = this.rng() * 0.05,
-      color = new THREE.Color(0.06 + rx, 0.08 + ry, 0.07 + rz),
+    const waterOptions = BIOMES[this.options.biome.name].water
+    const color = waterOptions.color
+        .clone()
+        .add(new THREE.Color(this.rng() * 0.05, this.rng() * 0.05, this.rng() * 0.05)),
       material = new THREE.MeshPhysicalMaterial({
         color: color,
         transparent: true,
-        opacity: 0.8,
+        opacity: waterOptions.opacity,
         roughness: 0.01,
         reflectivity: 1,
-        envMap: this.webgl.scene.environment,
       }),
       geometry = this.generateMesh()
 

@@ -3,11 +3,11 @@ import ContextualObject from './ContextualObject'
 
 export default class Rock extends ContextualObject {
   static className = 'Rock'
-  static distributionOptions = { sand: 1, grass: 0.2 }
+  static distributionOptions = { shoreline: 1, ground: 0.2 }
   static labels = ['rock']
   static baseDensity = 0.1
   static randomAngle = new THREE.Vector3(15, 90, 15)
-  static baseSize = 0.8
+  static baseSize = 1
   static allowUnderwater = true
 
   constructor(webgl, options) {

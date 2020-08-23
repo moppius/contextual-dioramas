@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { ImprovedNoise } from 'three/examples/jsm/math/ImprovedNoise.js'
 import generateSideMeshes from '../lib/meshUtils'
 import { lerp } from 'canvas-sketch-util/math'
+import { BIOMES } from './Biomes'
 
 export default class Terrain extends THREE.Group {
   #bottomPadding = 2
@@ -43,8 +44,7 @@ export default class Terrain extends THREE.Group {
 
     const material = new THREE.MeshPhysicalMaterial({
       map: texture,
-      envMap: this.webgl.scene.environment,
-      roughness: 0.6,
+      roughness: 0.7,
     })
 
     this.mesh = new THREE.Mesh(geometry, material)
@@ -55,8 +55,7 @@ export default class Terrain extends THREE.Group {
     this.add(this.mesh)
 
     const sideMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0x554928,
-      envMap: this.webgl.scene.environment,
+      color: BIOMES[this.options.biome.name].terrain.side,
       roughness: 0.6,
     })
     generateSideMeshes(
@@ -133,47 +132,55 @@ export default class Terrain extends THREE.Group {
       waterLevel = lerp(-halfHeight, halfHeight, this.options.water.level),
       vertices = geometry.getAttribute('position').array,
       normals = geometry.getAttribute('normal').array,
-      grass = new THREE.Color(0.19 + rng() * 0.05, 0.35 + rng() * 0.05, 0.11 + rng() * 0.05),
-      sand = new THREE.Color(0.41 + rng() * 0.05, 0.31 + rng() * 0.05, 0.15 + rng() * 0.05),
-      cliff = new THREE.Color(0.28 + rng() * 0.05, 0.31 + rng() * 0.05, 0.29 + rng() * 0.05),
-      underwater = new THREE.Color(0.05 + rng() * 0.05, 0.08 + rng() * 0.05, 0.08 + rng() * 0.05),
+      ground = BIOMES[this.options.biome.name].terrain.ground
+        .clone()
+        .add(new THREE.Color(rng() * 0.05, rng() * 0.05, rng() * 0.05)),
+      shoreline = BIOMES[this.options.biome.name].terrain.shoreline
+        .clone()
+        .add(new THREE.Color(rng() * 0.05, rng() * 0.05, rng() * 0.05)),
+      cliff = BIOMES[this.options.biome.name].terrain.cliff
+        .clone()
+        .add(new THREE.Color(rng() * 0.05, rng() * 0.05, rng() * 0.05)),
+      underwater = BIOMES[this.options.biome.name].terrain.underwater
+        .clone()
+        .add(new THREE.Color(rng() * 0.05, rng() * 0.05, rng() * 0.05)),
       upVector = new THREE.Vector3(0, 1, 0),
       minCliffSteepness = 0.15,
       maxCliffSteepness = 0.2
 
     for (let i = 0, l = vertices.length / 3; i < l; i++) {
-      let color = grass.clone(),
-        labels = ['grass']
+      let color = ground.clone(),
+        labels = ['ground']
       if (this.options.water.enabled) {
         const height = vertices[i * 3 + 1]
         if (height < waterLevel) {
           color = underwater.clone()
-          labels = ['sand']
+          labels = ['shoreline']
         }
-        if (this.options.water.sand.enabled === true) {
-          const sandMax = this.options.water.sand.width + this.options.water.sand.falloff
-          if (height <= waterLevel - this.options.water.sand.width) {
-            // UNDERWATER TO SAND
+        if (this.options.water.shoreline.enabled === true) {
+          const sandMax = this.options.water.shoreline.width + this.options.water.shoreline.falloff
+          if (height <= waterLevel - this.options.water.shoreline.width) {
+            // UNDERWATER TO SHORELINE
             const t = Math.clamp(height / (waterLevel - height), 0, 1)
-            color.lerp(sand, t)
+            color.lerp(shoreline, t)
           } else if (sandMax > 0.001) {
-            if (height <= waterLevel + this.options.water.sand.width) {
-              // SOLID SAND
-              color = sand.clone()
-              labels = ['sand']
-            } else if (this.options.water.sand.falloff > 0.001) {
-              // SAND TO GRASS
+            if (height <= waterLevel + this.options.water.shoreline.width) {
+              // SOLID SHORELINE
+              color = shoreline.clone()
+              labels = ['shoreline']
+            } else if (this.options.water.shoreline.falloff > 0.001) {
+              // SHORELINE TO GROUND
               const t = Math.clamp(
-                (height - waterLevel - this.options.water.sand.width) /
-                  this.options.water.sand.falloff,
+                (height - waterLevel - this.options.water.shoreline.width) /
+                  this.options.water.shoreline.falloff,
                 0,
                 1
               )
-              color = sand.clone().lerp(grass, t)
+              color = shoreline.clone().lerp(ground, t)
               if (t <= 0.33) {
-                labels = ['sand']
+                labels = ['shoreline']
               } else if (t <= 0.67) {
-                labels.push('sand')
+                labels.push('shoreline')
               }
             }
           }

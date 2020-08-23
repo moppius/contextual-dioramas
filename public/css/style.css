@@ -32,3 +32,28 @@ h5 {
   min-width: 50px;
   margin: 0.5rem;
 }
+
+#controls h2 select {
+  margin-left: 0.5rem;
+}
+
+a#button {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  padding: 12px;
+  border-radius: 50%;
+  height: 3rem;
+  width: 3rem;
+  margin-bottom: 0px;
+  background-color: #fff;
+  opacity: 0.8;
+  z-index: 999;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.15);
+  text-decoration: none;
+  font-weight: bold;
+}
+
+a#button:hover {
+  opacity: 1;
+}

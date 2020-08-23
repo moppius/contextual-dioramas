@@ -1,5 +1,5 @@
-import * as THREE from 'three'
 import { Diorama } from '../components/Diorama'
+import { BIOMES } from '../components/Biomes'
 import { isEmpty } from 'lodash'
 
 /** Default ranges for option sliders */
@@ -18,7 +18,7 @@ const ranges = {
     width: { min: 0.5, max: 20, step: 0.5 },
     falloff: { min: 0.5, max: 20, step: 0.5 },
   },
-  sand: {
+  shoreline: {
     width: { max: 10, step: 0.5 },
     falloff: { max: 10, step: 0.5 },
   },
@@ -80,30 +80,103 @@ class SliderControl extends InputControl {
   }
 }
 
+class BiomeGroup {
+  constructor(owner, options) {
+    this.owner = owner
+    this.options = options
+
+    this.biomeName = options.defaultValue.name
+
+    this.div = document.createElement('div')
+    this.heading = document.createElement('h' + options.depth)
+    this.heading.innerText = 'Biome'
+    this.div.appendChild(this.heading)
+
+    this.biomeSelect = document.createElement('select')
+    for (const biomeName of Object.keys(BIOMES)) {
+      const option = document.createElement('option')
+      option.value = biomeName
+      option.innerText = toDisplayString(biomeName)
+      if (biomeName === this.biomeName) {
+        option.selected = true
+      }
+      this.biomeSelect.appendChild(option)
+    }
+    this.biomeSelect.onchange = () => this.biomeChanged()
+    this.heading.appendChild(this.biomeSelect)
+
+    this.controls = {}
+    this.updateControls()
+
+    options.parent.appendChild(this.div)
+  }
+
+  biomeChanged() {
+    this.biomeName = this.biomeSelect.options[this.biomeSelect.selectedIndex].value
+    this.updateControls()
+    this.propertyChanged()
+  }
+
+  updateControls() {
+    for (const control of Object.keys(this.controls)) {
+      this.div.removeChild(this.controls[control].div)
+    }
+
+    this.controls = {}
+    let childOptions = {
+      name: 'assets',
+      optionsObject: BIOMES[this.biomeName].assets,
+      valueOverrides: this.options.optionsObject.assets,
+      parent: this.div,
+      depth: this.options.depth + 1,
+    }
+    this.controls['assets'] = new AssetArrayGroup(this, childOptions)
+  }
+
+  propertyChanged() {
+    this.options.optionsObject.assets = this.controls['assets'].getValue()
+    this.owner.propertyChanged()
+  }
+
+  getValue() {
+    const options = { name: this.biomeName }
+    for (const [key, value] of Object.entries(this.controls)) {
+      options[key] = value.getValue()
+    }
+    return options
+  }
+}
+
 class AssetArrayGroup {
   constructor(owner, options) {
     this.owner = owner
     this.options = options
 
     this.div = document.createElement('div')
-    this.heading = document.createElement('h' + options.depth)
-    this.heading.innerText = 'Assets'
-    this.div.appendChild(this.heading)
 
     this.controls = {}
 
     const childOptions = {
       parent: this.div,
       min: 0,
-      max: 5,
+      max: 3,
       step: 0.1,
     }
-    for (const [key, value] of Object.entries(options.optionsObject)) {
+
+    for (const object of options.optionsObject) {
+      const name = object.prototype.constructor.className
+      let defaultValue = 1
+      if (
+        this.options.valueOverrides !== undefined &&
+        Object.keys(this.options.valueOverrides).indexOf(name) > -1
+      ) {
+        defaultValue = this.options.valueOverrides[name]
+      }
       Object.assign(childOptions, {
-        name: key + 's',
-        defaultValue: value,
+        name: name,
+        defaultValue: defaultValue,
       })
-      this.controls[key] = new SliderControl(this, childOptions)
+      this.controls[name] = new SliderControl(this, childOptions)
     }
 
     options.parent.appendChild(this.div)
@@ -150,8 +223,8 @@ class ControlGroup {
         case 'object':
           if (isEmpty(value) === false) {
             Object.assign(childOptions, { optionsObject: value, depth: options.depth + 1 })
-            if (key === 'assetClasses') {
-              this.controls[key] = new AssetArrayGroup(this, childOptions)
+            if (key === 'biome') {
+              this.controls[key] = new BiomeGroup(this, childOptions)
             } else {
               this.controls[key] = new ControlGroup(this, childOptions)
             }

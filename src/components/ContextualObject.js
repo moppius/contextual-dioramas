@@ -36,7 +36,6 @@ export default class ContextualObject extends THREE.Group {
     materialOptions.color.r += (this.rng() - 0.5) * variation
     materialOptions.color.g += (this.rng() - 0.5) * variation
     materialOptions.color.b += (this.rng() - 0.5) * variation
-    materialOptions.envMap = this.webgl.scene.environment
     if (materialOptions.roughness === undefined) {
       materialOptions.roughness = 0.6
     }

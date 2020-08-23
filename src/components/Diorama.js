@@ -1,14 +1,14 @@
-import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js'
 import * as THREE from 'three'
-import Building from './Building'
+import assets from '../lib/AssetManager'
+import { BIOMES } from './Biomes'
 import ContextualObject from './ContextualObject'
 import Quad from './ContextQuadtree'
-import Rock from './Rock'
 import Terrain from './Terrain'
-import Tree from './Tree'
 import Water from './Water'
 
-const ALL_ASSET_CLASSES = [Building, Tree, Rock]
+const hdriKey = assets.queue({
+  url: 'textures/equirectangular/cloud_layers_1k.hdr',
+})
 
 export class Diorama extends THREE.Group {
   constructor(webgl, options) {
@@ -59,8 +59,8 @@ export class Diorama extends THREE.Group {
       }
     }
 
-    for (const ASSET_CLASS of ALL_ASSET_CLASSES) {
-      this.distributeObjects(ASSET_CLASS)
+    for (const asset of BIOMES[this.options.diorama.biome.name].assets) {
+      this.distributeObjects(asset)
     }
 
     this.createBase()
@@ -125,17 +125,11 @@ export class Diorama extends THREE.Group {
 
     const scene = this.webgl.scene
 
-    new RGBELoader()
-      .setDataType(THREE.UnsignedByteType)
-      .setPath('textures/equirectangular/')
-      .load('cloud_layers_1k.hdr', function (texture) {
-        const envMap = pmremGenerator.fromEquirectangular(texture).texture
+    const skyImage = assets.get(hdriKey)
+    this.webgl.scene.environment = pmremGenerator.fromEquirectangular(skyImage).texture
 
-        scene.environment = envMap
-
-        texture.dispose()
-        pmremGenerator.dispose()
-      })
+    skyImage.dispose()
+    pmremGenerator.dispose()
 
     this.webgl.renderer.toneMapping = THREE.ACESFilmicToneMapping
     this.webgl.renderer.toneMappingExposure = 0.25
@@ -153,7 +147,6 @@ export class Diorama extends THREE.Group {
     )
     const material = new THREE.MeshPhysicalMaterial({
       color: new THREE.Color(0.2, 0.2, 0.2),
-      envMap: this.webgl.scene.environment,
       roughness: 0.25,
     })
     const base = new THREE.Mesh(geometry, material)
@@ -188,8 +181,11 @@ export class Diorama extends THREE.Group {
 
     let numObjects = (bounds.max.x - bounds.min.x) * (bounds.max.z - bounds.min.z)
 
-    if (className in this.options.diorama.assetClasses) {
-      numObjects *= this.options.diorama.assetClasses[className]
+    if (
+      this.options.diorama.biome.assets !== undefined &&
+      className in this.options.diorama.biome.assets
+    ) {
+      numObjects *= this.options.diorama.biome.assets[className]
     }
 
     if (hasOwnProperty.call(classToDistribute, 'baseDensity')) {
@@ -201,7 +197,7 @@ export class Diorama extends THREE.Group {
     numObjects = Math.floor(numObjects)
 
     const seedrandom = require('seedrandom'),
-      rng = seedrandom(className + this.options.diorama.seed),
+      rng = seedrandom(this.options.diorama.seed),
       raycaster = new THREE.Raycaster()
 
     const options = { bounds: this.options.diorama.bounds }
@@ -292,15 +288,14 @@ export function getDefaultDioramaOptions() {
   const defaultDioramaOptions = {
     seed: 2655,
     bounds: new THREE.Vector3(48, 16, 32),
-    biome: 'temperate',
-    assetClasses: getAssetClassDefaults(),
+    biome: { name: Object.keys(BIOMES)[0] },
     water: {
       enabled: true,
       level: 0.25,
       depth: 1,
       width: 2,
       falloff: 6,
-      sand: {
+      shoreline: {
         enabled: true,
         width: 1,
         falloff: 2,
@@ -310,7 +305,7 @@ export function getDefaultDioramaOptions() {
 
   function getAssetClassDefaults() {
     const result = {}
-    for (const assetClass of ALL_ASSET_CLASSES) {
+    for (const assetClass of defaultDioramaOptions.biome) {
       result[assetClass.prototype.constructor.className] = 1
     }
     return result

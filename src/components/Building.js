@@ -1,25 +1,34 @@
 import * as THREE from 'three'
+import assets from '../lib/AssetManager'
 import ContextualObject from './ContextualObject'
+
+const houseGltfKey = assets.queue({
+  url: 'models/house_swedish_01.glb',
+  type: 'gltf',
+})
 
 export default class Building extends ContextualObject {
   static className = 'Building'
-  static distributionOptions = { grass: 1 }
+  static distributionOptions = { ground: 1 }
   static labels = ['building']
   static baseDensity = 0.001
+  static randomAngle = new THREE.Vector3(0, 180, 0)
 
   constructor(webgl, options) {
     super(webgl, options)
 
     this.type = 'Building'
 
-    const geometry = new THREE.BoxGeometry(
-      this.options.bounds.x * 0.25,
-      this.options.bounds.y * 0.25,
-      this.options.bounds.z * 0.25
-    )
-    geometry.translate(0, this.options.bounds.y * 0.25 * 0.5, 0)
+    const houseGltf = assets.get(houseGltfKey)
+    const house = houseGltf.scene.clone()
 
-    const color = new THREE.Color(0.5, 0.4, 0.3)
-    this.addMesh(geometry, { color: color })
+    house.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true
+        child.receiveShadow = true
+      }
+    })
+
+    this.add(house)
   }
 }

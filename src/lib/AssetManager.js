@@ -5,6 +5,7 @@ import pMap from 'p-map'
 import prettyMs from 'pretty-ms'
 import loadImage from 'image-promise'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
 import loadTexture from './loadTexture'
 import loadEnvMap from './loadEnvMap'
 
@@ -42,6 +43,8 @@ class AssetManager {
     switch (true) {
       case /\.(gltf|glb)$/i.test(ext):
         return 'gltf'
+      case /\.(hdri|hdr)$/i.test(ext):
+        return 'hdri'
       case /\.json$/i.test(ext):
         return 'json'
       case /\.svg$/i.test(ext):
@@ -164,6 +167,12 @@ class AssetManager {
         return new Promise((resolve, reject) => {
           new GLTFLoader().load(url, resolve, null, (err) =>
             reject(new Error(`Could not load GLTF asset ${url}:\n${err}`))
+          )
+        })
+      case 'hdri':
+        return new Promise((resolve, reject) => {
+          new RGBELoader().load(url, resolve, null, (err) =>
+            reject(new Error(`Could not load HDRI asset ${url}:\n${err}`))
           )
         })
       case 'json':

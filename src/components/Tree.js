@@ -3,11 +3,11 @@ import ContextualObject from './ContextualObject'
 
 export default class Tree extends ContextualObject {
   static className = 'Tree'
-  static distributionOptions = { grass: 1 }
+  static distributionOptions = { ground: 1 }
   static labels = ['vegetation', 'tree']
-  static baseDensity = 0.05
+  static baseDensity = 0.025
   static randomAngle = new THREE.Vector3(4, 0, 4)
-  static baseHeight = 4
+  static baseHeight = 7
 
   constructor(webgl, options) {
     super(webgl, options)
