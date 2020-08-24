@@ -51,7 +51,9 @@ export class Diorama extends THREE.Group {
       this.add(this.water)
 
       if (window.DEBUG) {
-        const points = this.terrain.waterCurve.getPoints(10)
+        const points = this.terrain.waterCurve.getPoints(
+          Math.max(1, this.options.diorama.water.meander) * 10
+        )
         const waterLineGeometry = new THREE.BufferGeometry().setFromPoints(points)
         const material = new THREE.LineBasicMaterial({ color: 0xff00ff })
         const waterLine = new THREE.Line(waterLineGeometry, material)
@@ -287,14 +289,15 @@ export class Diorama extends THREE.Group {
 export function getDefaultDioramaOptions() {
   const defaultDioramaOptions = {
     seed: 2655,
-    bounds: new THREE.Vector3(48, 16, 32),
+    bounds: new THREE.Vector3(60, 16, 32),
     biome: { name: Object.keys(BIOMES)[0] },
     water: {
       enabled: true,
       level: 0.25,
       depth: 1,
       width: 2,
-      falloff: 6,
+      falloff: 4,
+      meander: 2,
       shoreline: {
         enabled: true,
         width: 1,

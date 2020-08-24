@@ -112,7 +112,7 @@ export default class Terrain extends THREE.Group {
   }
 
   generateTexture(geometry, width, height) {
-    var canvas, context, image, imageData
+    let canvas, context, image, imageData
 
     canvas = document.createElement('canvas')
     canvas.width = width
@@ -231,8 +231,8 @@ export default class Terrain extends THREE.Group {
     imageData = image.data
 
     // Add some noise
-    for (var i = 0, l = imageData.length; i < l; i += 4) {
-      var v = ~~((rng() - 0.5) * 8)
+    for (let i = 0, l = imageData.length; i < l; i += 4) {
+      let v = ~~((rng() - 0.5) * 8)
 
       imageData[i] += v
       imageData[i + 1] += v
@@ -245,7 +245,7 @@ export default class Terrain extends THREE.Group {
   }
 
   modifyGeometryForWater(geometry) {
-    const points = this.waterCurve.getPoints(10)
+    const points = this.waterCurve.getPoints(Math.max(1, this.options.water.meander) * 10)
     let vertices = geometry.getAttribute('position').array
     let test = new THREE.Vector3(0, 0, 0),
       target = new THREE.Vector3(0, 0, 0)
@@ -295,7 +295,7 @@ export default class Terrain extends THREE.Group {
   }
 
   getWaterCurve(geometry) {
-    var points = [new THREE.Vector3(0, 100000, 0), new THREE.Vector3(0, 100000, 0)],
+    let points = [new THREE.Vector3(0, 100000, 0), new THREE.Vector3(0, 100000, 0)],
       tempVec = new THREE.Vector3()
     const vertices = geometry.getAttribute('position').array,
       minDist = Math.min(this.options.bounds.x, this.options.bounds.z) / 4
@@ -316,11 +316,19 @@ export default class Terrain extends THREE.Group {
     }
 
     const xTest = this.options.bounds.x / 2,
-      zTest = this.options.bounds.z / 2
-    const line = new THREE.Line3(
-      points[0].clone().add(points[1].clone().sub(points[0]).multiplyScalar(-10)),
-      points[0].clone().add(points[1].clone().sub(points[0]).multiplyScalar(10))
-    )
+      zTest = this.options.bounds.z / 2,
+      maxDist = Math.max(this.options.bounds.x, this.options.bounds.y),
+      direction = points[1].clone().sub(points[0]).normalize(),
+      offset = direction.clone().multiplyScalar(maxDist)
+    let line = new THREE.Line3(points[0].clone().add(offset), points[0].clone().sub(offset))
+
+    let meander = this.options.water.meander
+    if (Math.abs(direction.dot(new THREE.Vector3(1, 0, 0))) >= 0.5) {
+      meander *= xTest / 20
+    } else {
+      meander *= zTest / 20
+    }
+    meander = Math.ceil(meander)
 
     let xPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), zTest)
     let zPlane = new THREE.Plane(new THREE.Vector3(1, 0, 0), xTest)
@@ -357,6 +365,20 @@ export default class Terrain extends THREE.Group {
       points[p].y = Math.max(lowest, points[p].y)
     }
 
-    return new THREE.CatmullRomCurve3([points[0], points[1]])
+    // Add some meandering points
+    const seedrandom = require('seedrandom'),
+      rng = seedrandom(this.options.seed),
+      finalPoints = [points[0], points[1]],
+      meanderDistance = 1.0 / (meander + 1)
+    line = new THREE.Line3(points[0], points[1])
+    for (let i = 0; i < meander; i++) {
+      let newVec = new THREE.Vector3()
+      line.at((i + 1) * meanderDistance, newVec)
+      newVec.x += ((rng() - 0.5) * maxDist) / 4
+      newVec.z += ((rng() - 0.5) * maxDist) / 4
+      finalPoints.splice(i + 1, 0, newVec)
+    }
+
+    return new THREE.CatmullRomCurve3(finalPoints)
   }
 }

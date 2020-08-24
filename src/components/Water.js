@@ -51,7 +51,7 @@ export default class Water extends THREE.Group {
     )
     geometry.rotateX(-Math.PI / 2)
 
-    const points = this.waterCurve.getPoints(10)
+    const points = this.waterCurve.getPoints(Math.max(1, this.options.water.meander) * 10)
     const halfHeight = this.options.bounds.y / 2
     let vertices = geometry.getAttribute('position').array
     for (let i = 0, j = 0, l = vertices.length / 3; i < l; i++, j += 3) {

@@ -8,15 +8,16 @@ const ranges = {
     seed: { max: 10000 },
   },
   bounds: {
-    x: { min: 5, max: 60 },
-    y: { min: 5, max: 30 },
-    z: { min: 5, max: 60 },
+    x: { min: 5, max: 80 },
+    y: { min: 5, max: 40 },
+    z: { min: 5, max: 80 },
   },
   water: {
     level: { max: 1, step: 0.01 },
     depth: { max: 10, step: 0.5 },
     width: { min: 0.5, max: 20, step: 0.5 },
     falloff: { min: 0.5, max: 20, step: 0.5 },
+    meander: { max: 5 },
   },
   shoreline: {
     width: { max: 10, step: 0.5 },
