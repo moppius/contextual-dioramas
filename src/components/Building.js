@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import assets from '../lib/AssetManager'
+import assets from '../utils/AssetManager'
 import ContextualObject from './ContextualObject'
 
 const houseGltfKey = assets.queue({

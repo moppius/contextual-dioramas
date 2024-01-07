@@ -1,6 +1,5 @@
 import * as THREE from 'three'
-import generateSideMeshes from '../lib/meshUtils'
-import { lerp } from 'canvas-sketch-util/math'
+import generateSideMeshes from '../utils/meshUtils'
 import { BIOMES } from './Biomes'
 
 export default class Water extends THREE.Group {
@@ -43,7 +42,7 @@ export default class Water extends THREE.Group {
   }
 
   generateMesh() {
-    const geometry = new THREE.PlaneBufferGeometry(
+    const geometry = new THREE.PlaneGeometry(
       this.options.bounds.x,
       this.options.bounds.z,
       1,
@@ -56,7 +55,7 @@ export default class Water extends THREE.Group {
     let vertices = geometry.getAttribute('position').array
     for (let i = 0, j = 0, l = vertices.length / 3; i < l; i++, j += 3) {
       vertices[j] *= 0.999
-      vertices[j + 1] = lerp(-halfHeight, halfHeight, this.options.water.level)
+      vertices[j + 1] = THREE.MathUtils.lerp(-halfHeight, halfHeight, this.options.water.level)
       vertices[j + 2] *= 0.999
     }
 

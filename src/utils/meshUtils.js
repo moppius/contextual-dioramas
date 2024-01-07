@@ -17,7 +17,7 @@ export default function generateSideMeshes(
   // +X, +Z, -X, -Z
   for (let side = 0; side < 4; side++) {
     const xSide = side % 2 == 1
-    const sideGeometry = new THREE.PlaneBufferGeometry(
+    const sideGeometry = new THREE.PlaneGeometry(
       xSide ? bounds.x : bounds.z,
       xSide ? bounds.z : bounds.x,
       xSide ? xSegments : zSegments,

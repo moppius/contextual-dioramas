@@ -1,5 +1,4 @@
 import * as THREE from 'three'
-import { degToRad } from 'canvas-sketch-util/math'
 
 export default class ContextualObject extends THREE.Group {
   static className = null
@@ -24,9 +23,9 @@ export default class ContextualObject extends THREE.Group {
     if (this.constructor.hasOwnProperty('randomAngle') === true) {
       this.setRotationFromEuler(
         new THREE.Euler(
-          (this.rng() - 0.5) * 2 * degToRad(this.constructor.randomAngle.x),
-          (this.rng() - 0.5) * 2 * degToRad(this.constructor.randomAngle.y),
-          (this.rng() - 0.5) * 2 * degToRad(this.constructor.randomAngle.z)
+          (this.rng() - 0.5) * 2 * THREE.MathUtils.degToRad(this.constructor.randomAngle.x),
+          (this.rng() - 0.5) * 2 * THREE.MathUtils.degToRad(this.constructor.randomAngle.y),
+          (this.rng() - 0.5) * 2 * THREE.MathUtils.degToRad(this.constructor.randomAngle.z)
         )
       )
     }

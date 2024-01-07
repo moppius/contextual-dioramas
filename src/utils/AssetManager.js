@@ -1,17 +1,15 @@
-// Inspiration for this class goes to Matt DesLauriers @mattdesl,
-// really awesome dude, give him a follow!
-// https://github.com/mattdesl/threejs-app/blob/master/src/util/AssetManager.js
 import pMap from 'p-map'
 import prettyMs from 'pretty-ms'
 import loadImage from 'image-promise'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
+import omit from 'lodash/omit'
 import loadTexture from './loadTexture'
 import loadEnvMap from './loadEnvMap'
+import loadGLTF from './loadGLTF'
+import { mapValues } from 'lodash-es'
 
 class AssetManager {
   #queue = []
-  #cache = {}
+  #loaded = {}
   #onProgressListeners = []
   #asyncConcurrency = 10
   #logs = []
@@ -26,11 +24,63 @@ class AssetManager {
   // Add an asset to be queued, input: { url, type, ...options }
   queue({ url, type, ...options }) {
     if (!url) throw new TypeError('Must specify a URL or opt.url for AssetManager.queue()')
-    if (!this._getQueued(url)) {
-      this.#queue.push({ url, type: type || this._extractType(url), ...options })
+
+    const queued = this._getQueued(url)
+    if (queued) {
+      // if it's already present, add only if the options are different
+      const queuedOptions = omit(queued, ['url', 'type'])
+      if (JSON.stringify(options) !== JSON.stringify(queuedOptions)) {
+        const hash = performance.now().toFixed(3).replace('.', '')
+        const key = `${url}.${hash}`
+        this.#queue.push({ key, url, type: type || this._extractType(url), ...options })
+        return key
+      }
+
+      return queued.url
     }
 
+    this.#queue.push({ url, type: type || this._extractType(url), ...options })
     return url
+  }
+
+  // Add a MeshStandardMaterial to be queued,
+  // input: { map, metalnessMap, roughnessMap, normalMap, ... }
+  queueStandardMaterial(maps, options = {}) {
+    const keys = {}
+
+    // These textures are non-color and they don't
+    // need gamma correction
+    const linearTextures = [
+      'pbrMap',
+      'alphaMap',
+      'aoMap',
+      'bumpMap',
+      'displacementMap',
+      'lightMap',
+      'metalnessMap',
+      'normalMap',
+      'roughnessMap',
+      'clearcoatMap',
+      'clearcoatNormalMap',
+      'clearcoatRoughnessMap',
+      'sheenRoughnessMap',
+      'sheenColorMap',
+      'specularIntensityMap',
+      'specularColorMap',
+      'thicknessMap',
+      'transmissionMap',
+    ]
+
+    Object.keys(maps).forEach((map) => {
+      keys[map] = this.queue({
+        url: maps[map],
+        type: 'texture',
+        ...options,
+        ...(!linearTextures.includes(map) && { gamma: true }),
+      })
+    })
+
+    return keys
   }
 
   _getQueued(url) {
@@ -43,8 +93,8 @@ class AssetManager {
     switch (true) {
       case /\.(gltf|glb)$/i.test(ext):
         return 'gltf'
-      case /\.(hdri|hdr)$/i.test(ext):
-        return 'hdri'
+      case /\.(exr|hdri?)$/i.test(ext):
+        return 'envmap'
       case /\.json$/i.test(ext):
         return 'json'
       case /\.svg$/i.test(ext):
@@ -61,13 +111,18 @@ class AssetManager {
   }
 
   // Fetch a loaded asset by URL
-  get = (url) => {
-    if (!url) throw new TypeError('Must specify an URL for AssetManager.get()')
+  get = (key) => {
+    if (!key) throw new TypeError('Must specify an URL for AssetManager.get()')
 
-    return this.#cache[url]
+    return this.#loaded[key]
   }
 
-  // Loads a single asset
+  // Fetch a loaded MeshStandardMaterial object
+  getStandardMaterial = (keys) => {
+    return mapValues(keys, (key) => this.get(key))
+  }
+
+  // Loads a single asset on demand.
   async loadSingle({ renderer, ...item }) {
     // renderer is used to load textures and env maps,
     // but require it always since it is an extensible pattern
@@ -76,21 +131,25 @@ class AssetManager {
     }
 
     try {
-      const itemLoadingStart = Date.now()
+      const itemLoadingStart = performance.now()
 
-      this.#cache[item.url] = await this._loadItem({ renderer, ...item })
+      const key = item.key || item.url
+      if (!(key in this.#loaded)) {
+        this.#loaded[key] = await this._loadItem({ renderer, ...item })
+      }
 
       if (window.DEBUG) {
         console.log(
-          `📦 Loaded single asset %c${item.url}%c in ${prettyMs(Date.now() - itemLoadingStart)}`,
+          `📦 Loaded single asset %c${item.url}%c in ${prettyMs(
+            performance.now() - itemLoadingStart
+          )}`,
           'color:blue',
           'color:black'
         )
       }
 
-      return item.url
+      return key
     } catch (err) {
-      delete this.#cache[item.url]
       console.error(`📦 Asset ${item.url} was not loaded:\n${err}`)
     }
   }
@@ -113,19 +172,22 @@ class AssetManager {
       return
     }
 
-    const loadingStart = Date.now()
+    const loadingStart = performance.now()
 
     await pMap(
       queue,
       async (item, i) => {
         try {
-          const itemLoadingStart = Date.now()
+          const itemLoadingStart = performance.now()
 
-          this.#cache[item.url] = await this._loadItem({ renderer, ...item })
+          const key = item.key || item.url
+          if (!(key in this.#loaded)) {
+            this.#loaded[key] = await this._loadItem({ renderer, ...item })
+          }
 
           if (window.DEBUG) {
             this.log(
-              `Loaded %c${item.url}%c in ${prettyMs(Date.now() - itemLoadingStart)}`,
+              `Loaded %c${item.url}%c in ${prettyMs(performance.now() - itemLoadingStart)}`,
               'color:blue',
               'color:black'
             )
@@ -144,7 +206,7 @@ class AssetManager {
       const errors = this.#logs.filter((log) => log.type === 'error')
 
       if (errors.length === 0) {
-        this.groupLog(`📦 Assets loaded in ${prettyMs(Date.now() - loadingStart)} ⏱`)
+        this.groupLog(`📦 Assets loaded in ${prettyMs(performance.now() - loadingStart)} ⏱`)
       } else {
         this.groupLog(
           `📦 %c Could not load ${errors.length} asset${errors.length > 1 ? 's' : ''} `,
@@ -154,29 +216,15 @@ class AssetManager {
     }
   }
 
-  // Loads a single asset on demand, returning from
-  // cache if it exists otherwise adding it to the cache
-  // after loading.
+  // Loads a single asset.
   _loadItem({ url, type, renderer, ...options }) {
-    if (url in this.#cache) {
-      return this.#cache[url]
-    }
-
     switch (type) {
       case 'gltf':
-        return new Promise((resolve, reject) => {
-          new GLTFLoader().load(url, resolve, null, (err) =>
-            reject(new Error(`Could not load GLTF asset ${url}:\n${err}`))
-          )
-        })
-      case 'hdri':
-        return new Promise((resolve, reject) => {
-          new RGBELoader().load(url, resolve, null, (err) =>
-            reject(new Error(`Could not load HDRI asset ${url}:\n${err}`))
-          )
-        })
+        return loadGLTF(url, options)
       case 'json':
         return fetch(url).then((response) => response.json())
+      case 'envmap':
+      case 'envMap':
       case 'env-map':
         return loadEnvMap(url, { renderer, ...options })
       case 'svg':
@@ -220,5 +268,6 @@ class AssetManager {
 
 // asset manager is a singleton, you can require it from
 // different files and use the same instance.
-// A plain js object would have worked just fine...
+// A plain js object would have worked just fine,
+// fucking java patterns
 export default new AssetManager()

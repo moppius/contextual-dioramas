@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import assets from '../lib/AssetManager'
+import assets from '../utils/AssetManager'
 import { BIOMES } from './Biomes'
 import ContextualObject from './ContextualObject'
 import Quad from './ContextQuadtree'
@@ -8,6 +8,7 @@ import Water from './Water'
 
 const hdriKey = assets.queue({
   url: 'textures/equirectangular/cloud_layers_1k.hdr',
+  pmrem: true,
 })
 
 export class Diorama extends THREE.Group {
@@ -122,19 +123,11 @@ export class Diorama extends THREE.Group {
       this.add(helper)
     }
 
-    const pmremGenerator = new THREE.PMREMGenerator(this.webgl.renderer)
-    pmremGenerator.compileEquirectangularShader()
-
-    const scene = this.webgl.scene
-    const skyImage = assets.get(hdriKey)
-    scene.environment = pmremGenerator.fromEquirectangular(skyImage).texture
-
-    skyImage.dispose()
-    pmremGenerator.dispose()
+    this.webgl.scene.environment = assets.get(hdriKey)
 
     this.webgl.renderer.toneMapping = THREE.ACESFilmicToneMapping
     this.webgl.renderer.toneMappingExposure = 0.25
-    this.webgl.renderer.outputEncoding = THREE.sRGBEncoding
+    this.webgl.renderer.outputColorSpace = THREE.SRGBColorSpace
   }
 
   createBase() {

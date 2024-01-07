@@ -1,7 +1,6 @@
 import * as THREE from 'three'
 import { ImprovedNoise } from 'three/examples/jsm/math/ImprovedNoise.js'
-import generateSideMeshes from '../lib/meshUtils'
-import { lerp } from 'canvas-sketch-util/math'
+import generateSideMeshes from '../utils/meshUtils'
 import { BIOMES } from './Biomes'
 
 export default class Terrain extends THREE.Group {
@@ -17,7 +16,7 @@ export default class Terrain extends THREE.Group {
 
     this.generateHeight(this.options.bounds.x, this.options.bounds.z)
 
-    const geometry = new THREE.PlaneBufferGeometry(
+    const geometry = new THREE.PlaneGeometry(
       this.options.bounds.x,
       this.options.bounds.z,
       this.options.bounds.x - 1,
@@ -129,7 +128,7 @@ export default class Terrain extends THREE.Group {
       rng = seedrandom(this.options.seed)
 
     const halfHeight = this.options.bounds.y / 2,
-      waterLevel = lerp(-halfHeight, halfHeight, this.options.water.level),
+      waterLevel = THREE.MathUtils.lerp(-halfHeight, halfHeight, this.options.water.level),
       vertices = geometry.getAttribute('position').array,
       normals = geometry.getAttribute('normal').array,
       ground = BIOMES[this.options.biome.name].terrain.ground
@@ -161,7 +160,7 @@ export default class Terrain extends THREE.Group {
           const sandMax = this.options.water.shoreline.width + this.options.water.shoreline.falloff
           if (height <= waterLevel - this.options.water.shoreline.width) {
             // UNDERWATER TO SHORELINE
-            const t = Math.clamp(height / (waterLevel - height), 0, 1)
+            const t = THREE.MathUtils.clamp(height / (waterLevel - height), 0, 1)
             color.lerp(shoreline, t)
           } else if (sandMax > 0.001) {
             if (height <= waterLevel + this.options.water.shoreline.width) {
@@ -170,7 +169,7 @@ export default class Terrain extends THREE.Group {
               labels = ['shoreline']
             } else if (this.options.water.shoreline.falloff > 0.001) {
               // SHORELINE TO GROUND
-              const t = Math.clamp(
+              const t = THREE.MathUtils.clamp(
                 (height - waterLevel - this.options.water.shoreline.width) /
                 this.options.water.shoreline.falloff,
                 0,
@@ -270,12 +269,12 @@ export default class Terrain extends THREE.Group {
   }
 
   getWaterVertexHeight(distance, target, current) {
-    const t = Math.clamp(
+    const t = THREE.MathUtils.clamp(
       (distance - this.options.water.width / 2) / this.options.water.falloff,
       0,
       1
     )
-    const calculated = lerp(target - this.options.water.depth, current, t)
+    const calculated = THREE.MathUtils.lerp(target - this.options.water.depth, current, t)
     const lowest = -this.options.bounds.y / 2 + 1
     return Math.max(lowest, calculated)
   }
@@ -354,9 +353,9 @@ export default class Terrain extends THREE.Group {
 
     // Flatten the water
     if (points[0].y > points[1].y) {
-      points[0].y = lerp(points[0].y, points[1].y, 0.75)
+      points[0].y = THREE.MathUtils.lerp(points[0].y, points[1].y, 0.75)
     } else {
-      points[1].y = lerp(points[1].y, points[0].y, 0.75)
+      points[1].y = THREE.MathUtils.lerp(points[1].y, points[0].y, 0.75)
     }
 
     // Don't let the curve go below the floor
