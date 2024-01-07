@@ -334,8 +334,8 @@ export default class Terrain extends THREE.Group {
 
     let endPoint = new THREE.Vector3(0, 0, 0)
     if (
-      xPlane.intersectLine(line, endPoint) !== undefined ||
-      zPlane.intersectLine(line, endPoint) !== undefined
+      xPlane.intersectLine(line, endPoint) ||
+      zPlane.intersectLine(line, endPoint)
     ) {
       points[1] = endPoint
     }
@@ -345,8 +345,8 @@ export default class Terrain extends THREE.Group {
 
     let startPoint = new THREE.Vector3(0, 0, 0)
     if (
-      xPlane.intersectLine(line, startPoint) !== undefined ||
-      zPlane.intersectLine(line, startPoint) !== undefined
+      xPlane.intersectLine(line, startPoint) ||
+      zPlane.intersectLine(line, startPoint)
     ) {
       points[0] = startPoint
     }
