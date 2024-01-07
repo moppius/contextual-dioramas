@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "description": "Contextual Dioramas",
   "repository": "https://github.com/moppius/contextual-dioramas",
+  "packageManager": "yarn@4.0.2",
   "author": {
     "name": "Paul Greveson",
     "email": "p.greveson@gmail.com",
