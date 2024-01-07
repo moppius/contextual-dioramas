@@ -89,7 +89,7 @@ export class Diorama extends THREE.Group {
   update(dt, time) { }
 
   setupLights() {
-    this.skylight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.8)
+    this.skylight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.2)
     this.skylight.color.setHSL(0.56, 0.7, 0.6)
     this.skylight.groundColor.setHSL(0.095, 0.5, 0.5)
     this.skylight.position.set(0, 50, 0)
@@ -126,9 +126,8 @@ export class Diorama extends THREE.Group {
     pmremGenerator.compileEquirectangularShader()
 
     const scene = this.webgl.scene
-
     const skyImage = assets.get(hdriKey)
-    this.webgl.scene.environment = pmremGenerator.fromEquirectangular(skyImage).texture
+    scene.environment = pmremGenerator.fromEquirectangular(skyImage).texture
 
     skyImage.dispose()
     pmremGenerator.dispose()
