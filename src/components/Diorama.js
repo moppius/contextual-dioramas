@@ -126,7 +126,7 @@ export class Diorama extends THREE.Group {
     this.webgl.scene.environment = assets.get(hdriKey)
 
     this.webgl.renderer.toneMapping = THREE.ACESFilmicToneMapping
-    this.webgl.renderer.toneMappingExposure = 0.25
+    this.webgl.renderer.toneMappingExposure = 0.5
     this.webgl.renderer.outputColorSpace = THREE.SRGBColorSpace
   }
 
