@@ -27,6 +27,8 @@ const webgl = new WebGLApp({
   far: 500,
 })
 
+webgl.renderer.shadowMap.enabled = true
+
 // attach it to the window to inspect in the console
 if (window.DEBUG) {
   window.webgl = webgl
