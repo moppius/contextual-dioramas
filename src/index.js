@@ -3,7 +3,7 @@ import assets from './utils/AssetManager'
 import { Diorama, getDefaultDioramaOptions } from './components/Diorama'
 import DioramaControls from './ui/DioramaControls'
 import { addScreenshotButton, addRecordButton } from './screenshot-record-buttons'
-import { Vector3 } from 'three'
+import { Vector3, PCFSoftShadowMap } from 'three'
 
 // true if the url has the `?debug` parameter, otherwise false
 window.DEBUG = window.location.search.includes('debug')
@@ -28,6 +28,7 @@ const webgl = new WebGLApp({
 })
 
 webgl.renderer.shadowMap.enabled = true
+webgl.renderer.shadowMap.type = PCFSoftShadowMap
 
 // attach it to the window to inspect in the console
 if (window.DEBUG) {
