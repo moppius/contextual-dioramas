@@ -14,13 +14,12 @@ const canvas = document.querySelector('#app')
 // setup the WebGLRenderer
 const webgl = new WebGLApp({
   canvas,
-  antialias: true,
+  alpha: true,
   background: '#ABC',
   backgroundAlpha: 1,
   // show the GUI and FPS if we're in debug mode
   showFps: window.DEBUG,
   gui: window.DEBUG,
-  postprocessing: true,
   orbitControls: { enabled: true, maxDistance: 250 },
   cameraPosition: new Vector3(30, 20, 60),
   fov: 40,
