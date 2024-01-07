@@ -86,7 +86,7 @@ export class Diorama extends THREE.Group {
     console.log(`Generated in ${elapsed / 1000}s`)
   }
 
-  update(dt, time) {}
+  update(dt, time) { }
 
   setupLights() {
     this.skylight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.8)

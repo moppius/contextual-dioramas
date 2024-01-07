@@ -21,8 +21,8 @@ export default class Water extends THREE.Group {
     this.rng = seedrandom(this.options.seed)
     const waterOptions = BIOMES[this.options.biome.name].water
     const color = waterOptions.color
-        .clone()
-        .add(new THREE.Color(this.rng() * 0.05, this.rng() * 0.05, this.rng() * 0.05)),
+      .clone()
+      .add(new THREE.Color(this.rng() * 0.05, this.rng() * 0.05, this.rng() * 0.05)),
       material = new THREE.MeshPhysicalMaterial({
         color: color,
         transparent: true,

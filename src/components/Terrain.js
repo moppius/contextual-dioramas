@@ -172,7 +172,7 @@ export default class Terrain extends THREE.Group {
               // SHORELINE TO GROUND
               const t = Math.clamp(
                 (height - waterLevel - this.options.water.shoreline.width) /
-                  this.options.water.shoreline.falloff,
+                this.options.water.shoreline.falloff,
                 0,
                 1
               )
